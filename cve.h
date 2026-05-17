@@ -7,20 +7,6 @@
 #include <type_traits>
 #include <utility>
 
-#if defined(CVE_FORCE_PORTABLE)
-  #define CVE_BACKEND_PORTABLE 1
-  #define CVE_BACKEND_NAME "portable"
-#elif defined(__clang__)
-  #define CVE_BACKEND_CLANG 1
-  #define CVE_BACKEND_NAME "clang"
-#elif defined(__GNUC__)
-  #define CVE_BACKEND_GCC 1
-  #define CVE_BACKEND_NAME "gcc"
-#else
-  #define CVE_BACKEND_PORTABLE 1
-  #define CVE_BACKEND_NAME "portable"
-#endif
-
 namespace cve_impl {
 
 template <class To>
@@ -38,7 +24,7 @@ using mask_t =
     std::conditional_t<sizeof(T) == 4, int,
     std::conditional_t<sizeof(T) == sizeof(long), long, long long>>>>;
 
-#if defined(CVE_BACKEND_CLANG)
+#if defined(__clang__)
 
 template <class T, std::size_t N>
 struct native { typedef T type __attribute__((ext_vector_type(N))); };
@@ -47,21 +33,12 @@ struct native { typedef T type __attribute__((ext_vector_type(N))); };
 
 template <class T, std::size_t N> struct vec;
 
-#if defined(CVE_BACKEND_GCC)
-template <class T, std::size_t N>
-struct storage_holder {
-    typedef T type __attribute__((vector_size(N * sizeof(T))));
-};
-template <class T, std::size_t N>
-using storage_t = typename storage_holder<T, N>::type;
-#else
 template <class T, std::size_t N>
 struct alignas(N * sizeof(T)) storage_t {
     std::array<T, N> e;
     constexpr T&       operator[](std::size_t i)       { return e[i]; }
     constexpr const T& operator[](std::size_t i) const { return e[i]; }
 };
-#endif
 
 template <class T, std::size_t N, std::size_t... Is>
 struct swizzle_proxy {
@@ -366,11 +343,11 @@ CVE_PROXY_BINOP(*)
 CVE_PROXY_BINOP(/)
 #undef CVE_PROXY_BINOP
 
-#endif // !CVE_BACKEND_CLANG
+#endif // !__clang__
 
 } // namespace cve_impl
 
-#if defined(CVE_BACKEND_CLANG)
+#if defined(__clang__)
 template <class T, std::size_t N>
 using cve = typename cve_impl::native<T, N>::type;
 #else
@@ -391,7 +368,7 @@ struct vec_traits {
         sizeof(V) / sizeof(element_type);
 };
 
-#if !defined(CVE_BACKEND_CLANG)
+#if !defined(__clang__)
 template <std::size_t I, class V>
 constexpr auto pick(V a, V b) {
     constexpr std::size_t N = vec_traits<V>::length;
@@ -404,7 +381,7 @@ constexpr auto pick(V a, V b) {
 
 template <std::size_t... Is, class V>
 constexpr auto cve_shuffle(V v) {
-#if defined(CVE_BACKEND_CLANG)
+#if defined(__clang__)
     return __builtin_shufflevector(v, v, Is...);
 #else
     using T = typename cve_impl::vec_traits<V>::element_type;
@@ -414,7 +391,7 @@ constexpr auto cve_shuffle(V v) {
 
 template <std::size_t... Is, class V>
 constexpr auto cve_shuffle(V a, V b) {
-#if defined(CVE_BACKEND_CLANG)
+#if defined(__clang__)
     return __builtin_shufflevector(a, b, Is...);
 #else
     using T = typename cve_impl::vec_traits<V>::element_type;
@@ -429,7 +406,7 @@ constexpr auto cve_shuffle(V a, V b) {
 template <class To, class V>
 constexpr auto cve_convert(V v) {
     constexpr std::size_t N = cve_impl::vec_traits<V>::length;
-#if defined(CVE_BACKEND_CLANG)
+#if defined(__clang__)
     typedef To result_t __attribute__((ext_vector_type(N)));
     return __builtin_convertvector(v, result_t);
 #else

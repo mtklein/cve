@@ -33,92 +33,42 @@ rule link_gcc
 rule run
   command = ./$in > $out
 
-build out/clang-native/test_arith.o: cxx_clang tests/test_arith.cc
-build out/clang-native/test_arith:   link_clang out/clang-native/test_arith.o
-build out/clang-native/test_arith.ok: run out/clang-native/test_arith
+build out/clang/test_arith.o: cxx_clang tests/test_arith.cc
+build out/clang/test_arith:   link_clang out/clang/test_arith.o
+build out/clang/test_arith.ok: run out/clang/test_arith
 
-build out/gcc-vector/test_arith.o: cxx_gcc tests/test_arith.cc
-build out/gcc-vector/test_arith:   link_gcc out/gcc-vector/test_arith.o
-build out/gcc-vector/test_arith.ok: run out/gcc-vector/test_arith
+build out/gcc/test_arith.o: cxx_gcc tests/test_arith.cc
+build out/gcc/test_arith:   link_gcc out/gcc/test_arith.o
+build out/gcc/test_arith.ok: run out/gcc/test_arith
 
-build out/clang-portable/test_arith.o: cxx_clang tests/test_arith.cc
-  extra = -DCVE_FORCE_PORTABLE
-build out/clang-portable/test_arith:   link_clang out/clang-portable/test_arith.o
-build out/clang-portable/test_arith.ok: run out/clang-portable/test_arith
+build out/clang/test_swizzle.o: cxx_clang tests/test_swizzle.cc
+build out/clang/test_swizzle:   link_clang out/clang/test_swizzle.o
+build out/clang/test_swizzle.ok: run out/clang/test_swizzle
 
-build out/gcc-portable/test_arith.o: cxx_gcc tests/test_arith.cc
-  extra = -DCVE_FORCE_PORTABLE
-build out/gcc-portable/test_arith:   link_gcc out/gcc-portable/test_arith.o
-build out/gcc-portable/test_arith.ok: run out/gcc-portable/test_arith
+build out/gcc/test_swizzle.o: cxx_gcc tests/test_swizzle.cc
+build out/gcc/test_swizzle:   link_gcc out/gcc/test_swizzle.o
+build out/gcc/test_swizzle.ok: run out/gcc/test_swizzle
 
-build out/clang-native/test_swizzle.o: cxx_clang tests/test_swizzle.cc
-build out/clang-native/test_swizzle:   link_clang out/clang-native/test_swizzle.o
-build out/clang-native/test_swizzle.ok: run out/clang-native/test_swizzle
+build out/clang/test_types.o: cxx_clang tests/test_types.cc
+build out/clang/test_types:   link_clang out/clang/test_types.o
+build out/clang/test_types.ok: run out/clang/test_types
 
-build out/gcc-vector/test_swizzle.o: cxx_gcc tests/test_swizzle.cc
-build out/gcc-vector/test_swizzle:   link_gcc out/gcc-vector/test_swizzle.o
-build out/gcc-vector/test_swizzle.ok: run out/gcc-vector/test_swizzle
+build out/gcc/test_types.o: cxx_gcc tests/test_types.cc
+build out/gcc/test_types:   link_gcc out/gcc/test_types.o
+build out/gcc/test_types.ok: run out/gcc/test_types
 
-build out/clang-portable/test_swizzle.o: cxx_clang tests/test_swizzle.cc
-  extra = -DCVE_FORCE_PORTABLE
-build out/clang-portable/test_swizzle:   link_clang out/clang-portable/test_swizzle.o
-build out/clang-portable/test_swizzle.ok: run out/clang-portable/test_swizzle
+build out/clang/test_shuffle.o: cxx_clang tests/test_shuffle.cc
+build out/clang/test_shuffle:   link_clang out/clang/test_shuffle.o
+build out/clang/test_shuffle.ok: run out/clang/test_shuffle
 
-build out/gcc-portable/test_swizzle.o: cxx_gcc tests/test_swizzle.cc
-  extra = -DCVE_FORCE_PORTABLE
-build out/gcc-portable/test_swizzle:   link_gcc out/gcc-portable/test_swizzle.o
-build out/gcc-portable/test_swizzle.ok: run out/gcc-portable/test_swizzle
+build out/gcc/test_shuffle.o: cxx_gcc tests/test_shuffle.cc
+build out/gcc/test_shuffle:   link_gcc out/gcc/test_shuffle.o
+build out/gcc/test_shuffle.ok: run out/gcc/test_shuffle
 
-build out/clang-native/test_types.o: cxx_clang tests/test_types.cc
-build out/clang-native/test_types:   link_clang out/clang-native/test_types.o
-build out/clang-native/test_types.ok: run out/clang-native/test_types
+build out/clang/test_loadstore.o: cxx_clang tests/test_loadstore.cc
+build out/clang/test_loadstore:   link_clang out/clang/test_loadstore.o
+build out/clang/test_loadstore.ok: run out/clang/test_loadstore
 
-build out/gcc-vector/test_types.o: cxx_gcc tests/test_types.cc
-build out/gcc-vector/test_types:   link_gcc out/gcc-vector/test_types.o
-build out/gcc-vector/test_types.ok: run out/gcc-vector/test_types
-
-build out/clang-portable/test_types.o: cxx_clang tests/test_types.cc
-  extra = -DCVE_FORCE_PORTABLE
-build out/clang-portable/test_types:   link_clang out/clang-portable/test_types.o
-build out/clang-portable/test_types.ok: run out/clang-portable/test_types
-
-build out/gcc-portable/test_types.o: cxx_gcc tests/test_types.cc
-  extra = -DCVE_FORCE_PORTABLE
-build out/gcc-portable/test_types:   link_gcc out/gcc-portable/test_types.o
-build out/gcc-portable/test_types.ok: run out/gcc-portable/test_types
-
-build out/clang-native/test_shuffle.o: cxx_clang tests/test_shuffle.cc
-build out/clang-native/test_shuffle:   link_clang out/clang-native/test_shuffle.o
-build out/clang-native/test_shuffle.ok: run out/clang-native/test_shuffle
-
-build out/gcc-vector/test_shuffle.o: cxx_gcc tests/test_shuffle.cc
-build out/gcc-vector/test_shuffle:   link_gcc out/gcc-vector/test_shuffle.o
-build out/gcc-vector/test_shuffle.ok: run out/gcc-vector/test_shuffle
-
-build out/clang-portable/test_shuffle.o: cxx_clang tests/test_shuffle.cc
-  extra = -DCVE_FORCE_PORTABLE
-build out/clang-portable/test_shuffle:   link_clang out/clang-portable/test_shuffle.o
-build out/clang-portable/test_shuffle.ok: run out/clang-portable/test_shuffle
-
-build out/gcc-portable/test_shuffle.o: cxx_gcc tests/test_shuffle.cc
-  extra = -DCVE_FORCE_PORTABLE
-build out/gcc-portable/test_shuffle:   link_gcc out/gcc-portable/test_shuffle.o
-build out/gcc-portable/test_shuffle.ok: run out/gcc-portable/test_shuffle
-
-build out/clang-native/test_loadstore.o: cxx_clang tests/test_loadstore.cc
-build out/clang-native/test_loadstore:   link_clang out/clang-native/test_loadstore.o
-build out/clang-native/test_loadstore.ok: run out/clang-native/test_loadstore
-
-build out/gcc-vector/test_loadstore.o: cxx_gcc tests/test_loadstore.cc
-build out/gcc-vector/test_loadstore:   link_gcc out/gcc-vector/test_loadstore.o
-build out/gcc-vector/test_loadstore.ok: run out/gcc-vector/test_loadstore
-
-build out/clang-portable/test_loadstore.o: cxx_clang tests/test_loadstore.cc
-  extra = -DCVE_FORCE_PORTABLE
-build out/clang-portable/test_loadstore:   link_clang out/clang-portable/test_loadstore.o
-build out/clang-portable/test_loadstore.ok: run out/clang-portable/test_loadstore
-
-build out/gcc-portable/test_loadstore.o: cxx_gcc tests/test_loadstore.cc
-  extra = -DCVE_FORCE_PORTABLE
-build out/gcc-portable/test_loadstore:   link_gcc out/gcc-portable/test_loadstore.o
-build out/gcc-portable/test_loadstore.ok: run out/gcc-portable/test_loadstore
+build out/gcc/test_loadstore.o: cxx_gcc tests/test_loadstore.cc
+build out/gcc/test_loadstore:   link_gcc out/gcc/test_loadstore.o
+build out/gcc/test_loadstore.ok: run out/gcc/test_loadstore
