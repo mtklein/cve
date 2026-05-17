@@ -34,8 +34,13 @@ struct native { typedef T type __attribute__((ext_vector_type(N))); };
 template <class T, std::size_t N> struct vec;
 
 template <class T, std::size_t N>
-struct alignas(N * sizeof(T)) storage_t {
-    std::array<T, N> e;
+struct storage_t {
+#if defined(__GNUC__)
+    typedef T native __attribute__((vector_size(N * sizeof(T))));
+    native e;
+#else
+    alignas(N * sizeof(T)) std::array<T, N> e;
+#endif
     constexpr T&       operator[](std::size_t i)       { return e[i]; }
     constexpr const T& operator[](std::size_t i) const { return e[i]; }
 };
