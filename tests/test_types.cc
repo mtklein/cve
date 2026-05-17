@@ -17,14 +17,14 @@ static void test_basic_arith() {
     V sum = a + b;
     V dif = a - b;
     V mul = a * b;
-    for (int i = 0; i < N; ++i) {
+    for (std::size_t i = 0; i < N; ++i) {
         assert(equiv(sum[i], T(5)));
         assert(equiv(dif[i], T(1)));
         assert(equiv(mul[i], T(6)));
     }
 
     V s = static_cast<T>(7) + a;
-    for (int i = 0; i < N; ++i) assert(equiv(s[i], T(10)));
+    for (std::size_t i = 0; i < N; ++i) assert(equiv(s[i], T(10)));
 }
 
 template <class T, int N>
@@ -35,7 +35,7 @@ static void test_basic_arith_int() {
     V b = static_cast<T>(2);
     V q = a / b;
     V r = a % b;
-    for (int i = 0; i < N; ++i) {
+    for (std::size_t i = 0; i < N; ++i) {
         assert(q[i] == T(3));
         assert(r[i] == T(1));
     }
@@ -52,14 +52,14 @@ static void test_cmp() {
     M ne = (a != b);
     M lt = (a <  b);
     M ge = (b >= a);
-    for (int i = 0; i < N; ++i) {
+    for (std::size_t i = 0; i < N; ++i) {
         assert(eq[i] == cve_mask<T>(-1));
         assert(ne[i] == cve_mask<T>(-1));
         assert(lt[i] == cve_mask<T>(-1));
         assert(ge[i] == cve_mask<T>(-1));
     }
     M neq = (a == b);
-    for (int i = 0; i < N; ++i) assert(neq[i] == 0);
+    for (std::size_t i = 0; i < N; ++i) assert(neq[i] == 0);
 }
 
 template <class T, int N>
@@ -72,7 +72,7 @@ static void test_bitwise() {
     V orv  = a | b;
     V xorv = a ^ b;
     V notv = ~a;
-    for (int i = 0; i < N; ++i) {
+    for (std::size_t i = 0; i < N; ++i) {
         assert(andv[i] == T(0b1000));
         assert(orv[i]  == T(0b1110));
         assert(xorv[i] == T(0b0110));
@@ -81,7 +81,7 @@ static void test_bitwise() {
 
     V shl = a << T(2);
     V shr = a >> T(1);
-    for (int i = 0; i < N; ++i) {
+    for (std::size_t i = 0; i < N; ++i) {
         assert(shl[i] == T(0b1100 << 2));
         assert(shr[i] == T(0b1100 >> 1));
     }
@@ -102,7 +102,7 @@ static void run_float() {
     V a = static_cast<T>(10);
     V b = static_cast<T>(4);
     V q = a / b;
-    for (int i = 0; i < N; ++i) assert(equiv(q[i], T(2.5)));
+    for (std::size_t i = 0; i < N; ++i) assert(equiv(q[i], T(2.5)));
 }
 
 template <class T>

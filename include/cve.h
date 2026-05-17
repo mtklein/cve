@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
@@ -39,30 +40,30 @@ using mask_t =
 
 #if defined(CVE_BACKEND_CLANG)
 
-template <class T, int N>
+template <class T, std::size_t N>
 struct native { typedef T type __attribute__((ext_vector_type(N))); };
 
 #else
 
-template <class T, int N> struct vec;
+template <class T, std::size_t N> struct vec;
 
 #if defined(CVE_BACKEND_GCC)
-template <class T, int N>
+template <class T, std::size_t N>
 struct storage_holder {
     typedef T type __attribute__((vector_size(N * sizeof(T))));
 };
-template <class T, int N>
+template <class T, std::size_t N>
 using storage_t = typename storage_holder<T, N>::type;
 #else
-template <class T, int N>
+template <class T, std::size_t N>
 struct alignas(N * sizeof(T)) storage_t {
-    T e[N];
-    constexpr T&       operator[](int i)       { return e[i]; }
-    constexpr const T& operator[](int i) const { return e[i]; }
+    std::array<T, N> e;
+    constexpr T&       operator[](std::size_t i)       { return e[i]; }
+    constexpr const T& operator[](std::size_t i) const { return e[i]; }
 };
 #endif
 
-template <class T, int N, int... Is>
+template <class T, std::size_t N, std::size_t... Is>
 struct swizzle_proxy {
     storage_t<T, N> data;
 
@@ -71,24 +72,24 @@ struct swizzle_proxy {
     // either aggregate-init swizzle_proxy or construct vec<T,2>.
     swizzle_proxy() = default;
 
-    static constexpr int K = static_cast<int>(sizeof...(Is));
+    static constexpr std::size_t K = sizeof...(Is);
 
     constexpr operator vec<T, K>() const {
         return vec<T, K>{ data[Is]... };
     }
 
     constexpr swizzle_proxy& operator=(const vec<T, K>& rhs) {
-        int idx[K] = { Is... };
-        for (int i = 0; i < K; ++i) data[idx[i]] = rhs[i];
+        std::size_t j = 0;
+        ((data[Is] = rhs[j++]), ...);
         return *this;
     }
 
     constexpr swizzle_proxy& operator=(T s) {
-        for (int i : {Is...}) data[i] = s;
+        ((data[Is] = s), ...);
         return *this;
     }
 
-    template <int M, int... Js>
+    template <std::size_t M, std::size_t... Js>
         requires (sizeof...(Js) == K)
     constexpr swizzle_proxy& operator=(const swizzle_proxy<T, M, Js...>& rhs) {
         return *this = implicit_cast<vec<T, K>>(rhs);
@@ -96,25 +97,25 @@ struct swizzle_proxy {
 };
 
 // Expects an identifier `N` to be in scope: the template parameter in the
-// primary vec template, or a `static constexpr int N = ...` declared above
-// the macro invocation in a specialization.
+// primary vec template, or a `static constexpr std::size_t N = ...` declared
+// above the macro invocation in a specialization.
 #define CVE_VEC_COMMON                                                        \
     vec() = default;                                                          \
                                                                               \
     constexpr vec(T s) {                                                      \
-        for (int i = 0; i < N; ++i) v[i] = s;                                 \
+        for (std::size_t i = 0; i < N; ++i) v[i] = s;                         \
     }                                                                         \
                                                                               \
     template <class... Args>                                                  \
         requires (sizeof...(Args) == N) && (N != 1)                           \
               && ((std::is_convertible_v<Args, T>) && ...)                    \
     constexpr vec(Args... args) {                                             \
-        T tmp[N] = { static_cast<T>(args)... };                               \
-        for (int i = 0; i < N; ++i) v[i] = tmp[i];                            \
+        std::size_t j = 0;                                                    \
+        ((v[j++] = static_cast<T>(args)), ...);                               \
     }                                                                         \
                                                                               \
-    constexpr T&       operator[](int i)       { return v[i]; }               \
-    constexpr const T& operator[](int i) const { return v[i]; }
+    constexpr T&       operator[](std::size_t i)       { return v[i]; }       \
+    constexpr const T& operator[](std::size_t i) const { return v[i]; }
 
 // These are friends, not free function templates, so ADL on a vec argument
 // finds them and lets implicit conversions kick in for the other argument.
@@ -123,19 +124,19 @@ struct swizzle_proxy {
 #define CVE_FRIEND_BINOP(OP)                                                  \
     friend constexpr vec operator OP(vec a, vec b) {                          \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i)                                           \
+        for (std::size_t i = 0; i < N; ++i)                                   \
             r.v[i] = static_cast<T>(a.v[i] OP b.v[i]);                        \
         return r;                                                             \
     }                                                                         \
     friend constexpr vec operator OP(vec a, T b) {                            \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i)                                           \
+        for (std::size_t i = 0; i < N; ++i)                                   \
             r.v[i] = static_cast<T>(a.v[i] OP b);                             \
         return r;                                                             \
     }                                                                         \
     friend constexpr vec operator OP(T a, vec b) {                            \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i)                                           \
+        for (std::size_t i = 0; i < N; ++i)                                   \
             r.v[i] = static_cast<T>(a OP b.v[i]);                             \
         return r;                                                             \
     }
@@ -145,19 +146,19 @@ struct swizzle_proxy {
 #define CVE_FRIEND_CMP(OP)                                                    \
     friend constexpr vec<mask_t<T>, N> operator OP(vec a, vec b) {            \
         vec<mask_t<T>, N> r;                                                  \
-        for (int i = 0; i < N; ++i)                                           \
+        for (std::size_t i = 0; i < N; ++i)                                   \
             r.v[i] = (a.v[i] OP b.v[i]) ? mask_t<T>(-1) : mask_t<T>(0);       \
         return r;                                                             \
     }                                                                         \
     friend constexpr vec<mask_t<T>, N> operator OP(vec a, T b) {              \
         vec<mask_t<T>, N> r;                                                  \
-        for (int i = 0; i < N; ++i)                                           \
+        for (std::size_t i = 0; i < N; ++i)                                   \
             r.v[i] = (a.v[i] OP b) ? mask_t<T>(-1) : mask_t<T>(0);            \
         return r;                                                             \
     }                                                                         \
     friend constexpr vec<mask_t<T>, N> operator OP(T a, vec b) {              \
         vec<mask_t<T>, N> r;                                                  \
-        for (int i = 0; i < N; ++i)                                           \
+        for (std::size_t i = 0; i < N; ++i)                                   \
             r.v[i] = (a OP b.v[i]) ? mask_t<T>(-1) : mask_t<T>(0);            \
         return r;                                                             \
     }
@@ -166,21 +167,21 @@ struct swizzle_proxy {
     friend constexpr vec operator OP(vec a, vec b)                            \
         requires std::is_integral_v<T> {                                      \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i)                                           \
+        for (std::size_t i = 0; i < N; ++i)                                   \
             r.v[i] = static_cast<T>(a.v[i] OP b.v[i]);                        \
         return r;                                                             \
     }                                                                         \
     friend constexpr vec operator OP(vec a, T b)                              \
         requires std::is_integral_v<T> {                                      \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i)                                           \
+        for (std::size_t i = 0; i < N; ++i)                                   \
             r.v[i] = static_cast<T>(a.v[i] OP b);                             \
         return r;                                                             \
     }                                                                         \
     friend constexpr vec operator OP(T a, vec b)                              \
         requires std::is_integral_v<T> {                                      \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i)                                           \
+        for (std::size_t i = 0; i < N; ++i)                                   \
             r.v[i] = static_cast<T>(a OP b.v[i]);                             \
         return r;                                                             \
     }
@@ -204,7 +205,7 @@ struct swizzle_proxy {
     CVE_FRIEND_BITOP(>>)                                                      \
     friend constexpr vec operator-(vec a) {                                   \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i)                                           \
+        for (std::size_t i = 0; i < N; ++i)                                   \
             r.v[i] = static_cast<T>(-a.v[i]);                                 \
         return r;                                                             \
     }                                                                         \
@@ -212,7 +213,7 @@ struct swizzle_proxy {
     friend constexpr vec operator~(vec a)                                     \
         requires std::is_integral_v<T> {                                      \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i)                                           \
+        for (std::size_t i = 0; i < N; ++i)                                   \
             r.v[i] = static_cast<T>(~a.v[i]);                                 \
         return r;                                                             \
     }                                                                         \
@@ -236,26 +237,26 @@ struct swizzle_proxy {
   #pragma GCC diagnostic ignored "-Wfloat-equal"
 #endif
 
-template <class T, int N>
+template <class T, std::size_t N>
 struct vec {
     storage_t<T, N> v;
     CVE_VEC_COMMON
     CVE_FRIEND_OPS
 };
 
-#define CVE_S2_FROM_2(L, A) \
+#define CVE_S2_FROM_2(L, A)                                                   \
     swizzle_proxy<T, 2, A, 0> L##x; swizzle_proxy<T, 2, A, 1> L##y;
-#define CVE_S2_ALL_2 \
+#define CVE_S2_ALL_2                                                          \
     CVE_S2_FROM_2(x, 0) CVE_S2_FROM_2(y, 1)
 
-#define CVE_S2_FROM_2_RGBA(L, A) \
+#define CVE_S2_FROM_2_RGBA(L, A)                                              \
     swizzle_proxy<T, 2, A, 0> L##r; swizzle_proxy<T, 2, A, 1> L##g;
-#define CVE_S2_ALL_2_RGBA \
+#define CVE_S2_ALL_2_RGBA                                                     \
     CVE_S2_FROM_2_RGBA(r, 0) CVE_S2_FROM_2_RGBA(g, 1)
 
 template <class T>
 struct vec<T, 2> {
-    static constexpr int N = 2;
+    static constexpr std::size_t N = 2;
     union {
         storage_t<T, 2> v;
         struct { T x, y; };
@@ -271,52 +272,52 @@ struct vec<T, 2> {
 // vec<T,3>, and N=3 isn't in the supported type matrix (GCC's vector_size
 // rejects non-power-of-2 widths, and exposing N=3 would add a separate
 // padding-aware storage path we don't otherwise need).
-#define CVE_S4_FROM_2(L, A) \
-    swizzle_proxy<T, 4, A, 0> L##x; swizzle_proxy<T, 4, A, 1> L##y; \
+#define CVE_S4_FROM_2(L, A)                                                   \
+    swizzle_proxy<T, 4, A, 0> L##x; swizzle_proxy<T, 4, A, 1> L##y;           \
     swizzle_proxy<T, 4, A, 2> L##z; swizzle_proxy<T, 4, A, 3> L##w;
-#define CVE_S4_ALL_2 \
-    CVE_S4_FROM_2(x, 0) CVE_S4_FROM_2(y, 1) \
+#define CVE_S4_ALL_2                                                          \
+    CVE_S4_FROM_2(x, 0) CVE_S4_FROM_2(y, 1)                                   \
     CVE_S4_FROM_2(z, 2) CVE_S4_FROM_2(w, 3)
 
-#define CVE_S4_FROM_2_RGBA(L, A) \
-    swizzle_proxy<T, 4, A, 0> L##r; swizzle_proxy<T, 4, A, 1> L##g; \
+#define CVE_S4_FROM_2_RGBA(L, A)                                              \
+    swizzle_proxy<T, 4, A, 0> L##r; swizzle_proxy<T, 4, A, 1> L##g;           \
     swizzle_proxy<T, 4, A, 2> L##b; swizzle_proxy<T, 4, A, 3> L##a;
-#define CVE_S4_ALL_2_RGBA \
-    CVE_S4_FROM_2_RGBA(r, 0) CVE_S4_FROM_2_RGBA(g, 1) \
+#define CVE_S4_ALL_2_RGBA                                                     \
+    CVE_S4_FROM_2_RGBA(r, 0) CVE_S4_FROM_2_RGBA(g, 1)                         \
     CVE_S4_FROM_2_RGBA(b, 2) CVE_S4_FROM_2_RGBA(a, 3)
 
-#define CVE_S4_FROM_4(NAME, A, B, C, D) \
+#define CVE_S4_FROM_4(NAME, A, B, C, D)                                       \
     swizzle_proxy<T, 4, A, B, C, D> NAME;
 
-#define CVE_S4_4_L4(L, A, B, C) \
-    CVE_S4_FROM_4(L##x, A, B, C, 0) CVE_S4_FROM_4(L##y, A, B, C, 1) \
+#define CVE_S4_4_L4(L, A, B, C)                                               \
+    CVE_S4_FROM_4(L##x, A, B, C, 0) CVE_S4_FROM_4(L##y, A, B, C, 1)           \
     CVE_S4_FROM_4(L##z, A, B, C, 2) CVE_S4_FROM_4(L##w, A, B, C, 3)
-#define CVE_S4_4_L3(L, A, B) \
-    CVE_S4_4_L4(L##x, A, B, 0) CVE_S4_4_L4(L##y, A, B, 1) \
+#define CVE_S4_4_L3(L, A, B)                                                  \
+    CVE_S4_4_L4(L##x, A, B, 0) CVE_S4_4_L4(L##y, A, B, 1)                     \
     CVE_S4_4_L4(L##z, A, B, 2) CVE_S4_4_L4(L##w, A, B, 3)
-#define CVE_S4_4_L2(L, A) \
-    CVE_S4_4_L3(L##x, A, 0) CVE_S4_4_L3(L##y, A, 1) \
+#define CVE_S4_4_L2(L, A)                                                     \
+    CVE_S4_4_L3(L##x, A, 0) CVE_S4_4_L3(L##y, A, 1)                           \
     CVE_S4_4_L3(L##z, A, 2) CVE_S4_4_L3(L##w, A, 3)
-#define CVE_S4_ALL_4 \
-    CVE_S4_4_L2(x, 0) CVE_S4_4_L2(y, 1) \
+#define CVE_S4_ALL_4                                                          \
+    CVE_S4_4_L2(x, 0) CVE_S4_4_L2(y, 1)                                       \
     CVE_S4_4_L2(z, 2) CVE_S4_4_L2(w, 3)
 
-#define CVE_S4_4_L4_RGBA(L, A, B, C) \
-    CVE_S4_FROM_4(L##r, A, B, C, 0) CVE_S4_FROM_4(L##g, A, B, C, 1) \
+#define CVE_S4_4_L4_RGBA(L, A, B, C)                                          \
+    CVE_S4_FROM_4(L##r, A, B, C, 0) CVE_S4_FROM_4(L##g, A, B, C, 1)           \
     CVE_S4_FROM_4(L##b, A, B, C, 2) CVE_S4_FROM_4(L##a, A, B, C, 3)
-#define CVE_S4_4_L3_RGBA(L, A, B) \
-    CVE_S4_4_L4_RGBA(L##r, A, B, 0) CVE_S4_4_L4_RGBA(L##g, A, B, 1) \
+#define CVE_S4_4_L3_RGBA(L, A, B)                                             \
+    CVE_S4_4_L4_RGBA(L##r, A, B, 0) CVE_S4_4_L4_RGBA(L##g, A, B, 1)           \
     CVE_S4_4_L4_RGBA(L##b, A, B, 2) CVE_S4_4_L4_RGBA(L##a, A, B, 3)
-#define CVE_S4_4_L2_RGBA(L, A) \
-    CVE_S4_4_L3_RGBA(L##r, A, 0) CVE_S4_4_L3_RGBA(L##g, A, 1) \
+#define CVE_S4_4_L2_RGBA(L, A)                                                \
+    CVE_S4_4_L3_RGBA(L##r, A, 0) CVE_S4_4_L3_RGBA(L##g, A, 1)                 \
     CVE_S4_4_L3_RGBA(L##b, A, 2) CVE_S4_4_L3_RGBA(L##a, A, 3)
-#define CVE_S4_ALL_4_RGBA \
-    CVE_S4_4_L2_RGBA(r, 0) CVE_S4_4_L2_RGBA(g, 1) \
+#define CVE_S4_ALL_4_RGBA                                                     \
+    CVE_S4_4_L2_RGBA(r, 0) CVE_S4_4_L2_RGBA(g, 1)                             \
     CVE_S4_4_L2_RGBA(b, 2) CVE_S4_4_L2_RGBA(a, 3)
 
 template <class T>
 struct vec<T, 4> {
-    static constexpr int N = 4;
+    static constexpr std::size_t N = 4;
     union {
         storage_t<T, 4> v;
         struct { T x, y, z, w; };
@@ -339,20 +340,22 @@ struct vec<T, 4> {
 // proxy ⊗ vec / vec ⊗ proxy are resolved through vec's hidden friends + the
 // proxy-to-vec conversion; only the remaining cases need free templates.
 #define CVE_PROXY_BINOP(OP)                                                   \
-    template <class T, int N1, int... Is, int N2, int... Js>                  \
+    template <class T,                                                        \
+              std::size_t N1, std::size_t... Is,                              \
+              std::size_t N2, std::size_t... Js>                              \
         requires(sizeof...(Is) == sizeof...(Js))                              \
     constexpr auto operator OP(swizzle_proxy<T, N1, Is...> a,                 \
                                swizzle_proxy<T, N2, Js...> b)                 \
         -> vec<T, sizeof...(Is)>                                              \
     {                                                                         \
-        constexpr int K = static_cast<int>(sizeof...(Is));                    \
+        constexpr std::size_t K = sizeof...(Is);                              \
         return implicit_cast<vec<T, K>>(a) OP implicit_cast<vec<T, K>>(b);    \
     }                                                                         \
-    template <class T, int N, int... Is>                                      \
+    template <class T, std::size_t N, std::size_t... Is>                      \
     constexpr auto operator OP(swizzle_proxy<T, N, Is...> a, T b)             \
         -> vec<T, sizeof...(Is)>                                              \
     { return implicit_cast<vec<T, sizeof...(Is)>>(a) OP b; }                  \
-    template <class T, int N, int... Is>                                      \
+    template <class T, std::size_t N, std::size_t... Is>                      \
     constexpr auto operator OP(T a, swizzle_proxy<T, N, Is...> b)             \
         -> vec<T, sizeof...(Is)>                                              \
     { return a OP implicit_cast<vec<T, sizeof...(Is)>>(b); }
@@ -368,10 +371,10 @@ CVE_PROXY_BINOP(/)
 } // namespace cve_impl
 
 #if defined(CVE_BACKEND_CLANG)
-template <class T, int N>
+template <class T, std::size_t N>
 using cve = typename cve_impl::native<T, N>::type;
 #else
-template <class T, int N>
+template <class T, std::size_t N>
 using cve = cve_impl::vec<T, N>;
 #endif
 
@@ -384,14 +387,14 @@ template <class V>
 struct vec_traits {
     using element_type =
         std::remove_reference_t<std::remove_cv_t<decltype(std::declval<V&>()[0])>>;
-    static constexpr int length =
-        static_cast<int>(sizeof(V) / sizeof(element_type));
+    static constexpr std::size_t length =
+        sizeof(V) / sizeof(element_type);
 };
 
 #if !defined(CVE_BACKEND_CLANG)
-template <int I, class V>
+template <std::size_t I, class V>
 constexpr auto pick(V a, V b) {
-    constexpr int N = vec_traits<V>::length;
+    constexpr std::size_t N = vec_traits<V>::length;
     if constexpr (I < N) return a[I];
     else                 return b[I - N];
 }
@@ -399,7 +402,7 @@ constexpr auto pick(V a, V b) {
 
 } // namespace cve_impl
 
-template <int... Is, class V>
+template <std::size_t... Is, class V>
 constexpr auto cve_shuffle(V v) {
 #if defined(CVE_BACKEND_CLANG)
     return __builtin_shufflevector(v, v, Is...);
@@ -409,7 +412,7 @@ constexpr auto cve_shuffle(V v) {
 #endif
 }
 
-template <int... Is, class V>
+template <std::size_t... Is, class V>
 constexpr auto cve_shuffle(V a, V b) {
 #if defined(CVE_BACKEND_CLANG)
     return __builtin_shufflevector(a, b, Is...);
@@ -425,13 +428,13 @@ constexpr auto cve_shuffle(V a, V b) {
 // scalar form from <cmath>.
 template <class To, class V>
 constexpr auto cve_convert(V v) {
-    constexpr int N = cve_impl::vec_traits<V>::length;
+    constexpr std::size_t N = cve_impl::vec_traits<V>::length;
 #if defined(CVE_BACKEND_CLANG)
     typedef To result_t __attribute__((ext_vector_type(N)));
     return __builtin_convertvector(v, result_t);
 #else
-    return [&]<int... Is>(std::integer_sequence<int, Is...>) {
+    return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
         return cve<To, N>{ static_cast<To>(v[Is])... };
-    }(std::make_integer_sequence<int, N>{});
+    }(std::make_index_sequence<N>{});
 #endif
 }

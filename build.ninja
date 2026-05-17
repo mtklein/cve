@@ -11,9 +11,7 @@ clang_warns  = -Weverything $
     -Wno-pre-c++14-compat $
     -Wno-pre-c++17-compat $
     -Wno-pre-c++20-compat $
-    -Wno-pre-c++20-compat-pedantic $
-    -Wno-unsafe-buffer-usage $
-    -Wno-unsafe-buffer-usage-in-libc-call
+    -Wno-pre-c++20-compat-pedantic
 gcc_warns    = -Wall -Wextra -Wpedantic
 
 rule cxx_clang
@@ -107,20 +105,20 @@ build out/gcc-portable/test_shuffle.o: cxx_gcc tests/test_shuffle.cc
 build out/gcc-portable/test_shuffle:   link_gcc out/gcc-portable/test_shuffle.o
 build out/gcc-portable/test_shuffle.ok: run out/gcc-portable/test_shuffle
 
-build out/clang-native/test_memcpy.o: cxx_clang tests/test_memcpy.cc
-build out/clang-native/test_memcpy:   link_clang out/clang-native/test_memcpy.o
-build out/clang-native/test_memcpy.ok: run out/clang-native/test_memcpy
+build out/clang-native/test_loadstore.o: cxx_clang tests/test_loadstore.cc
+build out/clang-native/test_loadstore:   link_clang out/clang-native/test_loadstore.o
+build out/clang-native/test_loadstore.ok: run out/clang-native/test_loadstore
 
-build out/gcc-vector/test_memcpy.o: cxx_gcc tests/test_memcpy.cc
-build out/gcc-vector/test_memcpy:   link_gcc out/gcc-vector/test_memcpy.o
-build out/gcc-vector/test_memcpy.ok: run out/gcc-vector/test_memcpy
+build out/gcc-vector/test_loadstore.o: cxx_gcc tests/test_loadstore.cc
+build out/gcc-vector/test_loadstore:   link_gcc out/gcc-vector/test_loadstore.o
+build out/gcc-vector/test_loadstore.ok: run out/gcc-vector/test_loadstore
 
-build out/clang-portable/test_memcpy.o: cxx_clang tests/test_memcpy.cc
+build out/clang-portable/test_loadstore.o: cxx_clang tests/test_loadstore.cc
   extra = -DCVE_FORCE_PORTABLE
-build out/clang-portable/test_memcpy:   link_clang out/clang-portable/test_memcpy.o
-build out/clang-portable/test_memcpy.ok: run out/clang-portable/test_memcpy
+build out/clang-portable/test_loadstore:   link_clang out/clang-portable/test_loadstore.o
+build out/clang-portable/test_loadstore.ok: run out/clang-portable/test_loadstore
 
-build out/gcc-portable/test_memcpy.o: cxx_gcc tests/test_memcpy.cc
+build out/gcc-portable/test_loadstore.o: cxx_gcc tests/test_loadstore.cc
   extra = -DCVE_FORCE_PORTABLE
-build out/gcc-portable/test_memcpy:   link_gcc out/gcc-portable/test_memcpy.o
-build out/gcc-portable/test_memcpy.ok: run out/gcc-portable/test_memcpy
+build out/gcc-portable/test_loadstore:   link_gcc out/gcc-portable/test_loadstore.o
+build out/gcc-portable/test_loadstore.ok: run out/gcc-portable/test_loadstore

@@ -8,10 +8,10 @@ using i4 = cve<int32_t, 4>;
 
 static void test_splat() {
     f4 a = 2.5f;
-    for (int i = 0; i < 4; ++i) assert(equiv(a[i], 2.5f));
+    for (std::size_t i = 0; i < 4; ++i) assert(equiv(a[i], 2.5f));
 
     i4 b = -7;
-    for (int i = 0; i < 4; ++i) assert(b[i] == -7);
+    for (std::size_t i = 0; i < 4; ++i) assert(b[i] == -7);
 }
 
 static void test_brace_init() {
