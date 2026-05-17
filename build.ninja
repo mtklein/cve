@@ -68,6 +68,9 @@ rule codegen_x86_64h
 rule diff
   command = diff -u $golden $in && touch $out
 
+rule gen_readme
+  command = ./readme.py > $out
+
 build out/clang/test_arith.o:    cxx_clang    tests/test_arith.cc
 build out/gcc/test_arith.o:      cxx_gcc      tests/test_arith.cc
 build out/portable/test_arith.o: cxx_portable tests/test_arith.cc
@@ -138,3 +141,7 @@ build out/codegen/x86_64h/fma.ok: diff out/codegen/x86_64h/fma.s
 build out/codegen/x86_64h/loop_sum.s: codegen_x86_64h codegen/loop_sum.cc
 build out/codegen/x86_64h/loop_sum.ok: diff out/codegen/x86_64h/loop_sum.s
   golden = codegen/x86_64h/loop_sum.s
+
+build README.md: gen_readme readme.py | cve.h codegen/fma.cc codegen/scrub.py $
+    tests/test_arith.cc tests/test_swizzle.cc tests/test_loadstore.cc $
+    tests/test_types.cc tests/test_shuffle.cc tests/test_util.h

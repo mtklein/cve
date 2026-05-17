@@ -1,4 +1,5 @@
 brew "ccache"
 brew "gcc"
+brew "hyperfine"
 brew "llvm"
 brew "ninja"
