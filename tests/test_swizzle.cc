@@ -1,5 +1,3 @@
-// Phase 2: GLSL-style swizzle (xyzw and rgba) on vec<T,2> and vec<T,4>.
-
 #include "cve.h"
 
 #include <cassert>
@@ -39,11 +37,9 @@ static void test_swizzle_read_2() {
     f2 c = v.wy;
     assert(c[0] == 4 && c[1] == 2);
 
-    // Repeated index (broadcast-style) is valid for rvalue use.
     f2 d = v.xx;
     assert(d[0] == 1 && d[1] == 1);
 
-    // rgba aliases pick the same lanes.
     f2 e = v.ab;
     assert(e[0] == 4 && e[1] == 3);
 }
@@ -66,42 +62,37 @@ static void test_swizzle_write_2() {
     v.xy = f2{50, 60};
     assert(v[0] == 50 && v[1] == 60 && v[2] == 3 && v[3] == 4);
 
-    v.zw = {70, 80};   // braced init list -> vec<T,2>
+    v.zw = {70, 80};
     assert(v[2] == 70 && v[3] == 80);
 
-    v.xy = 99.0f;      // splat-assign to selected lanes
+    v.xy = 99.0f;
     assert(v[0] == 99 && v[1] == 99 && v[2] == 70 && v[3] == 80);
 }
 
 static void test_swizzle_write_4() {
     f4 v = 0.0f;
-    v.wzyx = f4{1, 2, 3, 4};   // reverse-write
+    v.wzyx = f4{1, 2, 3, 4};
     assert(v[0] == 4 && v[1] == 3 && v[2] == 2 && v[3] == 1);
 
-    v.rgba = 5.0f;             // splat
+    v.rgba = 5.0f;
     assert(v[0] == 5 && v[1] == 5 && v[2] == 5 && v[3] == 5);
 }
 
 static void test_swizzle_in_expression() {
     f4 v = {1, 2, 3, 4};
 
-    // proxy + proxy
     f2 a = v.xy + v.zw;
     assert(a[0] == 4 && a[1] == 6);
 
-    // proxy ⊗ scalar
     f4 b = v.wzyx * 2.0f;
     assert(b[0] == 8 && b[1] == 6 && b[2] == 4 && b[3] == 2);
 
-    // proxy ⊗ vec
     f4 c = v.wzyx + f4{10, 10, 10, 10};
     assert(c[0] == 14 && c[1] == 13 && c[2] == 12 && c[3] == 11);
 
-    // vec ⊗ proxy
     f4 d = f4{100, 100, 100, 100} - v.xyzw;
     assert(d[0] == 99 && d[3] == 96);
 
-    // Cross-assign between proxies of matching width.
     f4 w = {0, 0, 0, 0};
     w.xy = v.zw;
     assert(w[0] == 3 && w[1] == 4 && w[2] == 0 && w[3] == 0);

@@ -1,6 +1,3 @@
-// Phase 4: cve_shuffle and cve_convert helpers (mirroring clang's
-// __builtin_shufflevector and __builtin_convertvector).
-
 #include "cve.h"
 
 #include <cassert>
@@ -18,34 +15,33 @@ static void test_shuffle_single_same_width() {
 
 static void test_shuffle_single_narrowing() {
     f4 v = {10, 20, 30, 40};
-    auto r = cve_shuffle<0, 2>(v);    // produces vec<float, 2>
+    auto r = cve_shuffle<0, 2>(v);
     assert(r[0] == 10 && r[1] == 30);
 }
 
 static void test_shuffle_single_widening() {
     cve<float, 2> v = {7, 8};
-    auto r = cve_shuffle<0, 1, 0, 1>(v); // produces vec<float, 4>
+    auto r = cve_shuffle<0, 1, 0, 1>(v);
     assert(r[0] == 7 && r[1] == 8 && r[2] == 7 && r[3] == 8);
 }
 
 static void test_shuffle_two_vec() {
     f4 a = {1, 2, 3, 4};
     f4 b = {10, 20, 30, 40};
-    // Lanes 0..3 from a, 4..7 from b.
-    f4 lo = cve_shuffle<0, 1, 4, 5>(a, b);    // {a0, a1, b0, b1}
+
+    f4 lo = cve_shuffle<0, 1, 4, 5>(a, b);
     assert(lo[0] == 1 && lo[1] == 2 && lo[2] == 10 && lo[3] == 20);
 
-    f4 hi = cve_shuffle<2, 3, 6, 7>(a, b);    // {a2, a3, b2, b3}
+    f4 hi = cve_shuffle<2, 3, 6, 7>(a, b);
     assert(hi[0] == 3 && hi[1] == 4 && hi[2] == 30 && hi[3] == 40);
 
-    f8 cat = cve_shuffle<0, 1, 2, 3, 4, 5, 6, 7>(a, b); // concat
+    f8 cat = cve_shuffle<0, 1, 2, 3, 4, 5, 6, 7>(a, b);
     assert(cat[0] == 1 && cat[3] == 4 && cat[4] == 10 && cat[7] == 40);
 }
 
 static void test_convert_float_to_int() {
     f4 v = {1.5f, 2.7f, -3.2f, 4.9f};
     i4 r = cve_convert<std::int32_t>(v);
-    // Conversion truncates toward zero.
     assert(r[0] == 1 && r[1] == 2 && r[2] == -3 && r[3] == 4);
 }
 

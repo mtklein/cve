@@ -1,6 +1,3 @@
-# Hand-written build.ninja for cve.
-# Four variants: clang-native, gcc-vector, clang-portable, gcc-portable.
-
 ninja_required_version = 1.10
 
 clang  = /opt/homebrew/opt/llvm/bin/clang++
@@ -33,29 +30,24 @@ rule run
   command = $in && touch $out
   description = RUN $in
 
-# ----- clang-native (true ext_vector_type) ----------------------------------
 build out/clang-native/test_arith.o: cxx_clang tests/test_arith.cc
 build out/clang-native/test_arith:   link_clang out/clang-native/test_arith.o
 build out/clang-native/test_arith.ok: run out/clang-native/test_arith
 
-# ----- gcc-vector (struct wrapping vector_size) -----------------------------
 build out/gcc-vector/test_arith.o: cxx_gcc tests/test_arith.cc
 build out/gcc-vector/test_arith:   link_gcc out/gcc-vector/test_arith.o
 build out/gcc-vector/test_arith.ok: run out/gcc-vector/test_arith
 
-# ----- clang-portable (CVE_FORCE_PORTABLE under clang) ----------------------
 build out/clang-portable/test_arith.o: cxx_clang tests/test_arith.cc
   extra = -DCVE_FORCE_PORTABLE
 build out/clang-portable/test_arith:   link_clang out/clang-portable/test_arith.o
 build out/clang-portable/test_arith.ok: run out/clang-portable/test_arith
 
-# ----- gcc-portable (CVE_FORCE_PORTABLE under gcc) --------------------------
 build out/gcc-portable/test_arith.o: cxx_gcc tests/test_arith.cc
   extra = -DCVE_FORCE_PORTABLE
 build out/gcc-portable/test_arith:   link_gcc out/gcc-portable/test_arith.o
 build out/gcc-portable/test_arith.ok: run out/gcc-portable/test_arith
 
-# ----- swizzle test (Phase 2) -----------------------------------------------
 build out/clang-native/test_swizzle.o: cxx_clang tests/test_swizzle.cc
 build out/clang-native/test_swizzle:   link_clang out/clang-native/test_swizzle.o
 build out/clang-native/test_swizzle.ok: run out/clang-native/test_swizzle
@@ -74,7 +66,6 @@ build out/gcc-portable/test_swizzle.o: cxx_gcc tests/test_swizzle.cc
 build out/gcc-portable/test_swizzle:   link_gcc out/gcc-portable/test_swizzle.o
 build out/gcc-portable/test_swizzle.ok: run out/gcc-portable/test_swizzle
 
-# ----- types test (Phase 3) -------------------------------------------------
 build out/clang-native/test_types.o: cxx_clang tests/test_types.cc
 build out/clang-native/test_types:   link_clang out/clang-native/test_types.o
 build out/clang-native/test_types.ok: run out/clang-native/test_types
@@ -93,7 +84,6 @@ build out/gcc-portable/test_types.o: cxx_gcc tests/test_types.cc
 build out/gcc-portable/test_types:   link_gcc out/gcc-portable/test_types.o
 build out/gcc-portable/test_types.ok: run out/gcc-portable/test_types
 
-# ----- shuffle test (Phase 4) -----------------------------------------------
 build out/clang-native/test_shuffle.o: cxx_clang tests/test_shuffle.cc
 build out/clang-native/test_shuffle:   link_clang out/clang-native/test_shuffle.o
 build out/clang-native/test_shuffle.ok: run out/clang-native/test_shuffle
@@ -112,7 +102,6 @@ build out/gcc-portable/test_shuffle.o: cxx_gcc tests/test_shuffle.cc
 build out/gcc-portable/test_shuffle:   link_gcc out/gcc-portable/test_shuffle.o
 build out/gcc-portable/test_shuffle.ok: run out/gcc-portable/test_shuffle
 
-# ----- aggregates -----------------------------------------------------------
 build all: phony $
     out/clang-native/test_arith    out/clang-native/test_swizzle    out/clang-native/test_types    out/clang-native/test_shuffle $
     out/gcc-vector/test_arith      out/gcc-vector/test_swizzle      out/gcc-vector/test_types      out/gcc-vector/test_shuffle $

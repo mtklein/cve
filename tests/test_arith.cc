@@ -1,6 +1,3 @@
-// Phase 1: basic arithmetic, splat, brace init, indexing.
-// Must compile identically against all three backends.
-
 #include "cve.h"
 
 #include <cassert>
@@ -83,7 +80,7 @@ static void test_unary() {
 
 static void test_mixed_expression() {
     f4 a = {1, 2, 3, 4};
-    f4 b = 2.0f;             // splat
+    f4 b = 2.0f;
     f4 c = (a + b) * 3.0f - a;
     assert(c[0] == (1+2)*3 - 1);
     assert(c[1] == (2+2)*3 - 2);

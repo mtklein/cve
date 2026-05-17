@@ -1,24 +1,3 @@
-// cve.h — C++ polyfill for clang's ext_vector_type.
-//
-// Usage:
-//   using f4 = cve<float, 4>;
-//   f4 a = 1.0f;             // splat
-//   f4 b = {1, 2, 3, 4};     // per-element
-//   f4 c = a + b * 2.0f;     // scalar broadcast
-//   float x = c[0];          // index
-//   c.xy = {7, 8};           // swizzle write (lvalue)
-//   f4 d = c.wzyx;           // swizzle read (rvalue)
-//
-// Backends (auto-selected):
-//   __clang__   -> native ext_vector_type
-//   __GNUC__    -> struct wrapping a __attribute__((vector_size)) member
-//   else        -> struct wrapping an aligned array, looped ops
-// Force the portable backend with -DCVE_FORCE_PORTABLE.
-//
-// Supported (T, N): T in {int8..int64, uint8..uint64, float, double},
-//                   N in {2, 4, 8, 16}.
-// Swizzles (xyzw + rgba aliases) are provided for N in {2, 4}.
-
 #pragma once
 
 #include <cstddef>
@@ -43,16 +22,11 @@
 
 namespace cve_impl {
 
-// ---------- comparison-result mask type -------------------------------------
-// Comparisons on a vec<T,N> return a vec<mask_t<T>,N> whose lanes are
-// 0 (false) or -1 (true), matching clang and GCC's native vector compares.
-// We use the fundamental integer types (char/short/int/long long) because
-// that's what clang's ext_vector_type compare returns — `int8_t` (typically
-// `signed char`) is a *distinct* type from `char` on most platforms, and
-// using `int8_t` here would fail the clang-native build.
-// Clang picks the shortest fundamental signed integer of the target size, so
-// on LP64 (macOS, Linux) it picks `long` for 8 bytes and on LLP64 (Windows)
-// it picks `long long`. Mirror that here.
+// Clang's ext_vector_type compare returns the shortest fundamental signed
+// integer of the operand's size — `char` for 1 byte (NOT `signed char`, which
+// is a distinct type), `long` for 8 bytes on LP64 (macOS, Linux) but
+// `long long` on LLP64 (Windows). Using <cstdint> aliases here would mismatch
+// clang's result type and break the clang-native build.
 template <class T>
 using mask_t =
     std::conditional_t<sizeof(T) == 1, char,
@@ -60,82 +34,57 @@ using mask_t =
     std::conditional_t<sizeof(T) == 4, int,
     std::conditional_t<sizeof(T) == sizeof(long), long, long long>>>>;
 
-// ============================================================================
-// Clang backend: a thin alias around ext_vector_type. No wrapper needed —
-// clang's native vector type already provides splat, brace init, ops, swizzle.
-// ============================================================================
 #if defined(CVE_BACKEND_CLANG)
 
 template <class T, int N>
 struct native { typedef T type __attribute__((ext_vector_type(N))); };
 
 #else
-// ============================================================================
-// Wrapper backends (GCC and portable). The wrapper:
-//   * holds storage (vector_size for GCC; aligned array for portable)
-//   * provides scalar splat / per-element constructors
-//   * overlays an anonymous union of named members + swizzle proxies
-// ============================================================================
 
 template <class T, int N> struct vec;
 
-// ---------- storage ---------------------------------------------------------
 #if defined(CVE_BACKEND_GCC)
-
-// GCC's vector_size is the storage. Indexing and arithmetic are built-in.
 template <class T, int N>
 struct storage_holder {
     typedef T type __attribute__((vector_size(N * sizeof(T))));
 };
 template <class T, int N>
 using storage_t = typename storage_holder<T, N>::type;
-
-#else // CVE_BACKEND_PORTABLE
-
-// Plain aligned array with operator[] so the rest of the code is uniform.
+#else
 template <class T, int N>
 struct alignas(N * sizeof(T)) storage_t {
     T e[N];
     constexpr T&       operator[](int i)       { return e[i]; }
     constexpr const T& operator[](int i) const { return e[i]; }
 };
-
 #endif
 
-// ---------- swizzle proxy ---------------------------------------------------
-// Layout-compatible with vec<T,N>; placed in an anonymous union with the
-// parent's storage so writes through the proxy mutate the parent.
 template <class T, int N, int... Is>
 struct swizzle_proxy {
     storage_t<T, N> data;
 
-    // A user-declared default ctor (defaulted but declared) disqualifies us
-    // from being an aggregate. Without this, `v.xy = {1, 2}` is ambiguous
-    // because the brace-init-list could either aggregate-init swizzle_proxy
-    // or construct vec<T,2>.
+    // A user-declared default ctor disqualifies us from being an aggregate.
+    // Without this, `v.xy = {1, 2}` is ambiguous: the brace-init-list could
+    // either aggregate-init swizzle_proxy or construct vec<T,2>.
     swizzle_proxy() = default;
 
     static constexpr int K = (int)sizeof...(Is);
 
-    // rvalue: gather the selected lanes into a vec<T, K>.
     constexpr operator vec<T, K>() const {
         return vec<T, K>{ data[Is]... };
     }
 
-    // lvalue: scatter from a vec<T, K> back into the source lanes.
     constexpr swizzle_proxy& operator=(const vec<T, K>& rhs) {
         int idx[K] = { Is... };
         for (int i = 0; i < K; ++i) data[idx[i]] = rhs[i];
         return *this;
     }
 
-    // lvalue: splat a scalar across the selected lanes.
     constexpr swizzle_proxy& operator=(T s) {
         for (int i : {Is...}) data[i] = s;
         return *this;
     }
 
-    // lvalue: cross-assign from another proxy of matching width.
     template <int M, int... Js>
         requires (sizeof...(Js) == K)
     constexpr swizzle_proxy& operator=(const swizzle_proxy<T, M, Js...>& rhs) {
@@ -143,20 +92,16 @@ struct swizzle_proxy {
     }
 };
 
-// ---------- common vec members (constructors, indexing) ---------------------
-// CVE_VEC_COMMON expects an identifier 'N' to be in scope inside the struct:
-//   - in the primary template, the template parameter `int N` plays that role
-//   - in specializations (vec<T,2>, vec<T,4>) declare `static constexpr int N`
-//     before invoking the macro.
+// Expects an identifier `N` to be in scope: the template parameter in the
+// primary vec template, or a `static constexpr int N = ...` declared above
+// the macro invocation in a specialization.
 #define CVE_VEC_COMMON                                                        \
     vec() = default;                                                          \
                                                                               \
-    /* splat: cve<float,4> v = 1.0f; */                                       \
     constexpr vec(T s) {                                                      \
         for (int i = 0; i < N; ++i) v[i] = s;                                 \
     }                                                                         \
                                                                               \
-    /* per-element: cve<float,4>{1,2,3,4}; requires exactly N args */         \
     template <class... Args>                                                  \
         requires (sizeof...(Args) == N) && (N != 1)                           \
               && ((std::is_convertible_v<Args, T>) && ...)                    \
@@ -168,10 +113,10 @@ struct swizzle_proxy {
     constexpr T&       operator[](int i)       { return v[i]; }               \
     constexpr const T& operator[](int i) const { return v[i]; }
 
-// ---------- hidden friends: operators on vec --------------------------------
-// Non-template friends are findable via ADL on a vec argument and allow
-// implicit conversions, so they handle:
-//   vec ⊗ vec, vec ⊗ T, T ⊗ vec, proxy ⊗ vec, vec ⊗ proxy, etc.
+// These are friends, not free function templates, so ADL on a vec argument
+// finds them and lets implicit conversions kick in for the other argument.
+// That covers proxy ⊗ vec, vec ⊗ proxy, scalar ⊗ vec, etc. — template arg
+// deduction wouldn't consider those conversions on a free template.
 #define CVE_FRIEND_BINOP(OP)                                                  \
     friend constexpr vec operator OP(vec a, vec b) {                          \
         vec r;                                                                \
@@ -189,7 +134,6 @@ struct swizzle_proxy {
         return r;                                                             \
     }
 
-// Comparison: returns a vec<mask_t<T>, N> where each lane is 0 or -1.
 #define CVE_FRIEND_CMP(OP)                                                    \
     friend constexpr vec<mask_t<T>, N> operator OP(vec a, vec b) {            \
         vec<mask_t<T>, N> r;                                                  \
@@ -210,7 +154,6 @@ struct swizzle_proxy {
         return r;                                                             \
     }
 
-// Bitwise binary op — constrained to integer T.
 #define CVE_FRIEND_BITOP(OP)                                                  \
     friend constexpr vec operator OP(vec a, vec b)                            \
         requires std::is_integral_v<T> {                                      \
@@ -269,7 +212,6 @@ struct swizzle_proxy {
     friend constexpr vec& operator*=(vec& a, T b)   { return a = a * b; }     \
     friend constexpr vec& operator/=(vec& a, T b)   { return a = a / b; }
 
-// Anonymous-struct extension warnings (we rely on it for .x/.y/.z/.w).
 #if defined(__clang__)
   #pragma clang diagnostic push
   #pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
@@ -279,9 +221,6 @@ struct swizzle_proxy {
   #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 
-// ============================================================================
-// Primary template — N with no swizzle support (8, 16, etc).
-// ============================================================================
 template <class T, int N>
 struct vec {
     storage_t<T, N> v;
@@ -289,9 +228,6 @@ struct vec {
     CVE_FRIEND_OPS
 };
 
-// ============================================================================
-// vec<T, 2> — has .x/.y, .r/.g, and 2-component swizzles.
-// ============================================================================
 #define CVE_S2_FROM_2(L, A) \
     swizzle_proxy<T, 2, A, 0> L##x; swizzle_proxy<T, 2, A, 1> L##y;
 #define CVE_S2_ALL_2 \
@@ -316,13 +252,10 @@ struct vec<T, 2> {
     CVE_FRIEND_OPS
 };
 
-// ============================================================================
-// vec<T, 4> — full xyzw / rgba named members, 2- and 4-component swizzles.
-// (3-component swizzles are intentionally omitted because vec<T,3> is not in
-// the supported type matrix.)
-// ============================================================================
-
-// 2-component swizzles on vec<T,4>
+// 3-component swizzles (.xyz, .rgb) are intentionally omitted: they'd return
+// vec<T,3>, and N=3 isn't in the supported type matrix (GCC's vector_size
+// rejects non-power-of-2 widths, and exposing N=3 would add a separate
+// padding-aware storage path we don't otherwise need).
 #define CVE_S4_FROM_2(L, A) \
     swizzle_proxy<T, 4, A, 0> L##x; swizzle_proxy<T, 4, A, 1> L##y; \
     swizzle_proxy<T, 4, A, 2> L##z; swizzle_proxy<T, 4, A, 3> L##w;
@@ -337,7 +270,6 @@ struct vec<T, 2> {
     CVE_S4_FROM_2_RGBA(r, 0) CVE_S4_FROM_2_RGBA(g, 1) \
     CVE_S4_FROM_2_RGBA(b, 2) CVE_S4_FROM_2_RGBA(a, 3)
 
-// 4-component swizzles on vec<T,4>: 4^4 = 256 names per alias set.
 #define CVE_S4_FROM_4(NAME, A, B, C, D) \
     swizzle_proxy<T, 4, A, B, C, D> NAME;
 
@@ -389,8 +321,8 @@ struct vec<T, 4> {
   #pragma GCC diagnostic pop
 #endif
 
-// ---------- proxy ⊗ proxy / proxy ⊗ scalar operators ------------------------
-// (proxy ⊗ vec is already handled by vec's hidden friends + implicit conv.)
+// proxy ⊗ vec / vec ⊗ proxy are resolved through vec's hidden friends + the
+// proxy-to-vec conversion; only the remaining cases need free templates.
 #define CVE_PROXY_BINOP(OP)                                                   \
     template <class T, int N1, int... Is, int N2, int... Js>                  \
         requires(sizeof...(Is) == sizeof...(Js))                              \
@@ -420,9 +352,6 @@ CVE_PROXY_BINOP(/)
 
 } // namespace cve_impl
 
-// ============================================================================
-// Public type alias.
-// ============================================================================
 #if defined(CVE_BACKEND_CLANG)
 template <class T, int N>
 using cve = typename cve_impl::native<T, N>::type;
@@ -431,18 +360,11 @@ template <class T, int N>
 using cve = cve_impl::vec<T, N>;
 #endif
 
-// Mask vec type produced by a comparison on cve<T, N>.
 template <class T>
 using cve_mask = cve_impl::mask_t<T>;
 
-// ============================================================================
-// Free-function helpers: cve_shuffle and cve_convert.
-// Mirror __builtin_shufflevector and __builtin_convertvector.
-// ============================================================================
 namespace cve_impl {
 
-// Extract (T, N) from any vec-like type (works for both ext_vector_type and
-// our wrapper struct because both support sizeof and operator[]).
 template <class V>
 struct vec_traits {
     using element_type =
@@ -452,7 +374,6 @@ struct vec_traits {
 };
 
 #if !defined(CVE_BACKEND_CLANG)
-// Helper: pick from one of two vecs by compile-time index (I < N -> a, else b).
 template <int I, class V>
 constexpr auto pick(V a, V b) {
     constexpr int N = vec_traits<V>::length;
@@ -463,7 +384,6 @@ constexpr auto pick(V a, V b) {
 
 } // namespace cve_impl
 
-// Single-vec shuffle: cve_shuffle<2,3,0,1>(v).
 template <int... Is, class V>
 constexpr auto cve_shuffle(V v) {
 #if defined(CVE_BACKEND_CLANG)
@@ -474,7 +394,6 @@ constexpr auto cve_shuffle(V v) {
 #endif
 }
 
-// Two-vec shuffle: indices in [0,N) pick from a, [N,2N) pick from b.
 template <int... Is, class V>
 constexpr auto cve_shuffle(V a, V b) {
 #if defined(CVE_BACKEND_CLANG)
@@ -485,7 +404,6 @@ constexpr auto cve_shuffle(V a, V b) {
 #endif
 }
 
-// Element-type conversion: cve_convert<int>(float_vec) -> int_vec of same N.
 template <class To, class V>
 constexpr auto cve_convert(V v) {
     constexpr int N = cve_impl::vec_traits<V>::length;

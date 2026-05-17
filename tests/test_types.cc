@@ -1,14 +1,8 @@
-// Phase 3: broaden the type matrix and exercise comparison + bitwise.
-//
-// Tests across {int8, int16, int32, int64, uint8, uint16, uint32, uint64,
-//                float, double} × {2, 4, 8, 16}.
-
 #include "cve.h"
 
 #include <cassert>
 #include <cstdint>
 
-// ---- arithmetic + indexing for every (T, N) in the matrix ------------------
 template <class T, int N>
 static void test_basic_arith() {
     using V = cve<T, N>;
@@ -24,7 +18,7 @@ static void test_basic_arith() {
         assert(mul[i] == T(6));
     }
 
-    V s = static_cast<T>(7) + a;     // T + V splat-and-add
+    V s = static_cast<T>(7) + a;
     for (int i = 0; i < N; ++i) assert(s[i] == T(10));
 }
 
@@ -42,7 +36,6 @@ static void test_basic_arith_int() {
     }
 }
 
-// ---- comparisons (return mask vec) ----------------------------------------
 template <class T, int N>
 static void test_cmp() {
     using V = cve<T, N>;
@@ -64,7 +57,6 @@ static void test_cmp() {
     for (int i = 0; i < N; ++i) assert(neq[i] == 0);
 }
 
-// ---- bitwise (integer only) -----------------------------------------------
 template <class T, int N>
 static void test_bitwise() {
     using V = cve<T, N>;
@@ -101,7 +93,6 @@ template <class T, int N>
 static void run_float() {
     test_basic_arith<T, N>();
     test_cmp<T, N>();
-    // float division
     using V = cve<T, N>;
     V a = static_cast<T>(10);
     V b = static_cast<T>(4);
