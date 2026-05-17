@@ -22,6 +22,9 @@
 
 namespace cve_impl {
 
+template <class To>
+constexpr To implicit_cast(std::type_identity_t<To> x) { return x; }
+
 // Clang's ext_vector_type compare returns the shortest fundamental signed
 // integer of the operand's size — `char` for 1 byte (NOT `signed char`, which
 // is a distinct type), `long` for 8 bytes on LP64 (macOS, Linux) but
@@ -68,7 +71,7 @@ struct swizzle_proxy {
     // either aggregate-init swizzle_proxy or construct vec<T,2>.
     swizzle_proxy() = default;
 
-    static constexpr int K = (int)sizeof...(Is);
+    static constexpr int K = static_cast<int>(sizeof...(Is));
 
     constexpr operator vec<T, K>() const {
         return vec<T, K>{ data[Is]... };
@@ -88,7 +91,7 @@ struct swizzle_proxy {
     template <int M, int... Js>
         requires (sizeof...(Js) == K)
     constexpr swizzle_proxy& operator=(const swizzle_proxy<T, M, Js...>& rhs) {
-        return *this = (vec<T, K>)rhs;
+        return *this = implicit_cast<vec<T, K>>(rhs);
     }
 };
 
@@ -120,17 +123,20 @@ struct swizzle_proxy {
 #define CVE_FRIEND_BINOP(OP)                                                  \
     friend constexpr vec operator OP(vec a, vec b) {                          \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i) r.v[i] = a.v[i] OP b.v[i];                \
+        for (int i = 0; i < N; ++i)                                           \
+            r.v[i] = static_cast<T>(a.v[i] OP b.v[i]);                        \
         return r;                                                             \
     }                                                                         \
     friend constexpr vec operator OP(vec a, T b) {                            \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i) r.v[i] = a.v[i] OP b;                     \
+        for (int i = 0; i < N; ++i)                                           \
+            r.v[i] = static_cast<T>(a.v[i] OP b);                             \
         return r;                                                             \
     }                                                                         \
     friend constexpr vec operator OP(T a, vec b) {                            \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i) r.v[i] = a OP b.v[i];                     \
+        for (int i = 0; i < N; ++i)                                           \
+            r.v[i] = static_cast<T>(a OP b.v[i]);                             \
         return r;                                                             \
     }
 
@@ -160,19 +166,22 @@ struct swizzle_proxy {
     friend constexpr vec operator OP(vec a, vec b)                            \
         requires std::is_integral_v<T> {                                      \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i) r.v[i] = a.v[i] OP b.v[i];                \
+        for (int i = 0; i < N; ++i)                                           \
+            r.v[i] = static_cast<T>(a.v[i] OP b.v[i]);                        \
         return r;                                                             \
     }                                                                         \
     friend constexpr vec operator OP(vec a, T b)                              \
         requires std::is_integral_v<T> {                                      \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i) r.v[i] = a.v[i] OP b;                     \
+        for (int i = 0; i < N; ++i)                                           \
+            r.v[i] = static_cast<T>(a.v[i] OP b);                             \
         return r;                                                             \
     }                                                                         \
     friend constexpr vec operator OP(T a, vec b)                              \
         requires std::is_integral_v<T> {                                      \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i) r.v[i] = a OP b.v[i];                     \
+        for (int i = 0; i < N; ++i)                                           \
+            r.v[i] = static_cast<T>(a OP b.v[i]);                             \
         return r;                                                             \
     }
 
@@ -195,14 +204,16 @@ struct swizzle_proxy {
     CVE_FRIEND_BITOP(>>)                                                      \
     friend constexpr vec operator-(vec a) {                                   \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i) r.v[i] = -a.v[i];                         \
+        for (int i = 0; i < N; ++i)                                           \
+            r.v[i] = static_cast<T>(-a.v[i]);                                 \
         return r;                                                             \
     }                                                                         \
     friend constexpr vec operator+(vec a) { return a; }                       \
     friend constexpr vec operator~(vec a)                                     \
         requires std::is_integral_v<T> {                                      \
         vec r;                                                                \
-        for (int i = 0; i < N; ++i) r.v[i] = ~a.v[i];                         \
+        for (int i = 0; i < N; ++i)                                           \
+            r.v[i] = static_cast<T>(~a.v[i]);                                 \
         return r;                                                             \
     }                                                                         \
     friend constexpr vec& operator+=(vec& a, vec b) { return a = a + b; }     \
@@ -332,17 +343,17 @@ struct vec<T, 4> {
                                swizzle_proxy<T, N2, Js...> b)                 \
         -> vec<T, sizeof...(Is)>                                              \
     {                                                                         \
-        constexpr int K = (int)sizeof...(Is);                                 \
-        return (vec<T, K>)a OP (vec<T, K>)b;                                  \
+        constexpr int K = static_cast<int>(sizeof...(Is));                    \
+        return implicit_cast<vec<T, K>>(a) OP implicit_cast<vec<T, K>>(b);    \
     }                                                                         \
     template <class T, int N, int... Is>                                      \
     constexpr auto operator OP(swizzle_proxy<T, N, Is...> a, T b)             \
         -> vec<T, sizeof...(Is)>                                              \
-    { return (vec<T, sizeof...(Is)>)a OP b; }                                 \
+    { return implicit_cast<vec<T, sizeof...(Is)>>(a) OP b; }                  \
     template <class T, int N, int... Is>                                      \
     constexpr auto operator OP(T a, swizzle_proxy<T, N, Is...> b)             \
         -> vec<T, sizeof...(Is)>                                              \
-    { return a OP (vec<T, sizeof...(Is)>)b; }
+    { return a OP implicit_cast<vec<T, sizeof...(Is)>>(b); }
 
 CVE_PROXY_BINOP(+)
 CVE_PROXY_BINOP(-)
@@ -372,7 +383,7 @@ struct vec_traits {
     using element_type =
         std::remove_reference_t<std::remove_cv_t<decltype(std::declval<V&>()[0])>>;
     static constexpr int length =
-        (int)(sizeof(V) / sizeof(element_type));
+        static_cast<int>(sizeof(V) / sizeof(element_type));
 };
 
 #if !defined(CVE_BACKEND_CLANG)
