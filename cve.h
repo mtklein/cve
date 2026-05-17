@@ -24,7 +24,7 @@ using mask_t =
     std::conditional_t<sizeof(T) == 4, int,
     std::conditional_t<sizeof(T) == sizeof(long), long, long long>>>>;
 
-#if defined(__clang__)
+#if defined(__clang__) && !defined(CVE_FORCE_PORTABLE)
 
 template <class T, std::size_t N>
 struct native { typedef T type __attribute__((ext_vector_type(N))); };
@@ -35,7 +35,7 @@ template <class T, std::size_t N> struct vec;
 
 template <class T, std::size_t N>
 struct storage_t {
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(CVE_FORCE_PORTABLE)
     typedef T native __attribute__((vector_size(N * sizeof(T))));
     native e;
 #else
@@ -352,7 +352,7 @@ CVE_PROXY_BINOP(/)
 
 } // namespace cve_impl
 
-#if defined(__clang__)
+#if defined(__clang__) && !defined(CVE_FORCE_PORTABLE)
 template <class T, std::size_t N>
 using cve = typename cve_impl::native<T, N>::type;
 #else
@@ -373,7 +373,7 @@ struct vec_traits {
         sizeof(V) / sizeof(element_type);
 };
 
-#if !defined(__clang__)
+#if !defined(__clang__) || defined(CVE_FORCE_PORTABLE)
 template <std::size_t I, class V>
 constexpr auto pick(V a, V b) {
     constexpr std::size_t N = vec_traits<V>::length;
@@ -386,7 +386,7 @@ constexpr auto pick(V a, V b) {
 
 template <std::size_t... Is, class V>
 constexpr auto cve_shuffle(V v) {
-#if defined(__clang__)
+#if defined(__clang__) && !defined(CVE_FORCE_PORTABLE)
     return __builtin_shufflevector(v, v, Is...);
 #else
     using T = typename cve_impl::vec_traits<V>::element_type;
@@ -396,7 +396,7 @@ constexpr auto cve_shuffle(V v) {
 
 template <std::size_t... Is, class V>
 constexpr auto cve_shuffle(V a, V b) {
-#if defined(__clang__)
+#if defined(__clang__) && !defined(CVE_FORCE_PORTABLE)
     return __builtin_shufflevector(a, b, Is...);
 #else
     using T = typename cve_impl::vec_traits<V>::element_type;
@@ -411,7 +411,7 @@ constexpr auto cve_shuffle(V a, V b) {
 template <class To, class V>
 constexpr auto cve_convert(V v) {
     constexpr std::size_t N = cve_impl::vec_traits<V>::length;
-#if defined(__clang__)
+#if defined(__clang__) && !defined(CVE_FORCE_PORTABLE)
     typedef To result_t __attribute__((ext_vector_type(N)));
     return __builtin_convertvector(v, result_t);
 #else

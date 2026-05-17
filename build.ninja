@@ -30,6 +30,14 @@ rule cxx_gcc
 rule link_gcc
   command = $gcc $in -o $out
 
+rule cxx_portable
+  command = $ccache $clang $cxxflags $clang_warns -DCVE_FORCE_PORTABLE $extra -MD -MF $out.d -c $in -o $out
+  depfile = $out.d
+  deps    = gcc
+
+rule link_portable
+  command = $clang $in -o $out
+
 rule run
   command = ./$in > $out
 
@@ -50,6 +58,10 @@ build out/gcc/test_arith.o: cxx_gcc tests/test_arith.cc
 build out/gcc/test_arith:   link_gcc out/gcc/test_arith.o
 build out/gcc/test_arith.ok: run out/gcc/test_arith
 
+build out/portable/test_arith.o: cxx_portable tests/test_arith.cc
+build out/portable/test_arith:   link_portable out/portable/test_arith.o
+build out/portable/test_arith.ok: run out/portable/test_arith
+
 build out/clang/test_swizzle.o: cxx_clang tests/test_swizzle.cc
 build out/clang/test_swizzle:   link_clang out/clang/test_swizzle.o
 build out/clang/test_swizzle.ok: run out/clang/test_swizzle
@@ -57,6 +69,10 @@ build out/clang/test_swizzle.ok: run out/clang/test_swizzle
 build out/gcc/test_swizzle.o: cxx_gcc tests/test_swizzle.cc
 build out/gcc/test_swizzle:   link_gcc out/gcc/test_swizzle.o
 build out/gcc/test_swizzle.ok: run out/gcc/test_swizzle
+
+build out/portable/test_swizzle.o: cxx_portable tests/test_swizzle.cc
+build out/portable/test_swizzle:   link_portable out/portable/test_swizzle.o
+build out/portable/test_swizzle.ok: run out/portable/test_swizzle
 
 build out/clang/test_types.o: cxx_clang tests/test_types.cc
 build out/clang/test_types:   link_clang out/clang/test_types.o
@@ -66,6 +82,10 @@ build out/gcc/test_types.o: cxx_gcc tests/test_types.cc
 build out/gcc/test_types:   link_gcc out/gcc/test_types.o
 build out/gcc/test_types.ok: run out/gcc/test_types
 
+build out/portable/test_types.o: cxx_portable tests/test_types.cc
+build out/portable/test_types:   link_portable out/portable/test_types.o
+build out/portable/test_types.ok: run out/portable/test_types
+
 build out/clang/test_shuffle.o: cxx_clang tests/test_shuffle.cc
 build out/clang/test_shuffle:   link_clang out/clang/test_shuffle.o
 build out/clang/test_shuffle.ok: run out/clang/test_shuffle
@@ -74,6 +94,10 @@ build out/gcc/test_shuffle.o: cxx_gcc tests/test_shuffle.cc
 build out/gcc/test_shuffle:   link_gcc out/gcc/test_shuffle.o
 build out/gcc/test_shuffle.ok: run out/gcc/test_shuffle
 
+build out/portable/test_shuffle.o: cxx_portable tests/test_shuffle.cc
+build out/portable/test_shuffle:   link_portable out/portable/test_shuffle.o
+build out/portable/test_shuffle.ok: run out/portable/test_shuffle
+
 build out/clang/test_loadstore.o: cxx_clang tests/test_loadstore.cc
 build out/clang/test_loadstore:   link_clang out/clang/test_loadstore.o
 build out/clang/test_loadstore.ok: run out/clang/test_loadstore
@@ -81,6 +105,10 @@ build out/clang/test_loadstore.ok: run out/clang/test_loadstore
 build out/gcc/test_loadstore.o: cxx_gcc tests/test_loadstore.cc
 build out/gcc/test_loadstore:   link_gcc out/gcc/test_loadstore.o
 build out/gcc/test_loadstore.ok: run out/gcc/test_loadstore
+
+build out/portable/test_loadstore.o: cxx_portable tests/test_loadstore.cc
+build out/portable/test_loadstore:   link_portable out/portable/test_loadstore.o
+build out/portable/test_loadstore.ok: run out/portable/test_loadstore
 
 build out/codegen/clang/fma.s: codegen_clang codegen/fma.cc
 build out/codegen/clang/fma.ok: diff out/codegen/clang/fma.s
