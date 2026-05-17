@@ -68,21 +68,10 @@ rule codegen_x86_64h
 rule diff
   command = diff -u $golden $in && touch $out
 
-build out/clang/test_arith.o: cxx_clang tests/test_arith.cc
-build out/clang/test_arith:   link_clang out/clang/test_arith.o
-build out/clang/test_arith.ok: run out/clang/test_arith
-
-build out/gcc/test_arith.o: cxx_gcc tests/test_arith.cc
-build out/gcc/test_arith:   link_gcc out/gcc/test_arith.o
-build out/gcc/test_arith.ok: run out/gcc/test_arith
-
+build out/clang/test_arith.o:    cxx_clang    tests/test_arith.cc
+build out/gcc/test_arith.o:      cxx_gcc      tests/test_arith.cc
 build out/portable/test_arith.o: cxx_portable tests/test_arith.cc
-build out/portable/test_arith:   link_portable out/portable/test_arith.o
-build out/portable/test_arith.ok: run out/portable/test_arith
-
-build out/x86_64h/test_arith.o: cxx_x86_64h tests/test_arith.cc
-build out/x86_64h/test_arith:   link_x86_64h out/x86_64h/test_arith.o
-build out/x86_64h/test_arith.ok: run out/x86_64h/test_arith
+build out/x86_64h/test_arith.o:  cxx_x86_64h  tests/test_arith.cc
 
 build out/clang/test_swizzle.o: cxx_clang tests/test_swizzle.cc
 build out/clang/test_swizzle:   link_clang out/clang/test_swizzle.o
@@ -100,37 +89,15 @@ build out/x86_64h/test_swizzle.o: cxx_x86_64h tests/test_swizzle.cc
 build out/x86_64h/test_swizzle:   link_x86_64h out/x86_64h/test_swizzle.o
 build out/x86_64h/test_swizzle.ok: run out/x86_64h/test_swizzle
 
-build out/clang/test_types.o: cxx_clang tests/test_types.cc
-build out/clang/test_types:   link_clang out/clang/test_types.o
-build out/clang/test_types.ok: run out/clang/test_types
-
-build out/gcc/test_types.o: cxx_gcc tests/test_types.cc
-build out/gcc/test_types:   link_gcc out/gcc/test_types.o
-build out/gcc/test_types.ok: run out/gcc/test_types
-
+build out/clang/test_types.o:    cxx_clang    tests/test_types.cc
+build out/gcc/test_types.o:      cxx_gcc      tests/test_types.cc
 build out/portable/test_types.o: cxx_portable tests/test_types.cc
-build out/portable/test_types:   link_portable out/portable/test_types.o
-build out/portable/test_types.ok: run out/portable/test_types
+build out/x86_64h/test_types.o:  cxx_x86_64h  tests/test_types.cc
 
-build out/x86_64h/test_types.o: cxx_x86_64h tests/test_types.cc
-build out/x86_64h/test_types:   link_x86_64h out/x86_64h/test_types.o
-build out/x86_64h/test_types.ok: run out/x86_64h/test_types
-
-build out/clang/test_shuffle.o: cxx_clang tests/test_shuffle.cc
-build out/clang/test_shuffle:   link_clang out/clang/test_shuffle.o
-build out/clang/test_shuffle.ok: run out/clang/test_shuffle
-
-build out/gcc/test_shuffle.o: cxx_gcc tests/test_shuffle.cc
-build out/gcc/test_shuffle:   link_gcc out/gcc/test_shuffle.o
-build out/gcc/test_shuffle.ok: run out/gcc/test_shuffle
-
+build out/clang/test_shuffle.o:    cxx_clang    tests/test_shuffle.cc
+build out/gcc/test_shuffle.o:      cxx_gcc      tests/test_shuffle.cc
 build out/portable/test_shuffle.o: cxx_portable tests/test_shuffle.cc
-build out/portable/test_shuffle:   link_portable out/portable/test_shuffle.o
-build out/portable/test_shuffle.ok: run out/portable/test_shuffle
-
-build out/x86_64h/test_shuffle.o: cxx_x86_64h tests/test_shuffle.cc
-build out/x86_64h/test_shuffle:   link_x86_64h out/x86_64h/test_shuffle.o
-build out/x86_64h/test_shuffle.ok: run out/x86_64h/test_shuffle
+build out/x86_64h/test_shuffle.o:  cxx_x86_64h  tests/test_shuffle.cc
 
 build out/clang/test_loadstore.o: cxx_clang tests/test_loadstore.cc
 build out/clang/test_loadstore:   link_clang out/clang/test_loadstore.o

@@ -125,4 +125,3 @@ static_assert(run_int_all_n<std::uint64_t>());
 static_assert(run_float_all_n<float>());
 static_assert(run_float_all_n<double>());
 
-int main() { return 0; }

@@ -86,4 +86,3 @@ namespace mixed_expression {
     static_assert(equiv(c[3], static_cast<float>((4+2)*3 - 4)));
 }
 
-int main() { return 0; }

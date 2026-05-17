@@ -63,4 +63,3 @@ namespace convert_narrowing {
     static_assert(r[0] == 1 && r[3] == 4);
 }
 
-int main() { return 0; }
