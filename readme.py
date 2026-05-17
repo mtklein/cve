@@ -24,7 +24,7 @@ WARNS_CLANG = [
 WARNS_GCC = ["-Wall", "-Wextra", "-Wpedantic"]
 
 COMPILE_TIME_OPT   = "-O1"
-COMPILE_TIME_FLAGS = ["-Werror"]
+COMPILE_TIME_FLAGS = ["-Werror", "-fno-math-errno"]
 HYPERFINE_WARMUP   = 1
 HYPERFINE_RUNS     = 5
 HYPERFINE_FIELD    = "median"
@@ -37,7 +37,7 @@ COMPILE_TIME_FILES = [
 ]
 
 def scrubbed_instructions(cxx, source, opt, defines):
-    cmd = [cxx, "-std=c++20", opt, "-S", source, "-o", "-"] + defines
+    cmd = [cxx, "-std=c++20", opt, "-fno-math-errno", "-S", source, "-o", "-"] + defines
     p = subprocess.run(cmd, capture_output=True, text=True, check=True)
     scrub = subprocess.run(
         ["python3", "codegen/scrub.py"],

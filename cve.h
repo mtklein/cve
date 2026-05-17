@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <initializer_list>
 #include <type_traits>
 #include <utility>
@@ -594,8 +595,9 @@ V cve_abs(V a) {
     return __builtin_elementwise_abs(a);
 #else
     using T = typename cve_impl::vec_traits<V>::element_type;
-    return CVE_LANEWISE(cve_impl::vec_traits<V>::length,
-        (V{ static_cast<T>(a[Is] < T(0) ? -a[Is] : a[Is])... }));
+    if constexpr (std::is_unsigned_v<T>) return a;
+    else return CVE_LANEWISE(cve_impl::vec_traits<V>::length,
+        (V{ static_cast<T>(std::abs(a[Is]))... }));
 #endif
 }
 
