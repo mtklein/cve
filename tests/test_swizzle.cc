@@ -3,7 +3,6 @@
 #include "cve.h"
 
 #include <cassert>
-#include <cstdio>
 
 using f2 = cve<float, 2>;
 using f4 = cve<float, 4>;
@@ -126,6 +125,5 @@ int main() {
     test_swizzle_write_4();
     test_swizzle_in_expression();
     test_swizzle_ints();
-    std::printf("test_swizzle [%s]: OK\n", CVE_BACKEND_NAME);
     return 0;
 }

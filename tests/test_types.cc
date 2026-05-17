@@ -7,7 +7,6 @@
 
 #include <cassert>
 #include <cstdint>
-#include <cstdio>
 
 // ---- arithmetic + indexing for every (T, N) in the matrix ------------------
 template <class T, int N>
@@ -137,7 +136,5 @@ int main() {
     run_int_all_n<std::uint64_t>();
     run_float_all_n<float>();
     run_float_all_n<double>();
-
-    std::printf("test_types [%s]: OK\n", CVE_BACKEND_NAME);
     return 0;
 }

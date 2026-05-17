@@ -4,7 +4,6 @@
 #include "cve.h"
 
 #include <cassert>
-#include <cstdio>
 
 using f4 = cve<float, 4>;
 using i4 = cve<int32_t, 4>;
@@ -100,6 +99,5 @@ int main() {
     test_compound();
     test_unary();
     test_mixed_expression();
-    std::printf("test_arith [%s]: OK\n", CVE_BACKEND_NAME);
     return 0;
 }

@@ -5,8 +5,6 @@
 
 #include <cassert>
 #include <cstdint>
-#include <cstdio>
-#include <utility>
 
 using f4 = cve<float, 4>;
 using i4 = cve<std::int32_t, 4>;
@@ -71,6 +69,5 @@ int main() {
     test_convert_float_to_int();
     test_convert_int_to_float();
     test_convert_narrowing();
-    std::printf("test_shuffle [%s]: OK\n", CVE_BACKEND_NAME);
     return 0;
 }

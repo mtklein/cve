@@ -466,10 +466,10 @@ constexpr auto pick(V a, V b) {
 // Single-vec shuffle: cve_shuffle<2,3,0,1>(v).
 template <int... Is, class V>
 constexpr auto cve_shuffle(V v) {
-    using T = typename cve_impl::vec_traits<V>::element_type;
 #if defined(CVE_BACKEND_CLANG)
     return __builtin_shufflevector(v, v, Is...);
 #else
+    using T = typename cve_impl::vec_traits<V>::element_type;
     return cve<T, sizeof...(Is)>{ v[Is]... };
 #endif
 }
@@ -477,10 +477,10 @@ constexpr auto cve_shuffle(V v) {
 // Two-vec shuffle: indices in [0,N) pick from a, [N,2N) pick from b.
 template <int... Is, class V>
 constexpr auto cve_shuffle(V a, V b) {
-    using T = typename cve_impl::vec_traits<V>::element_type;
 #if defined(CVE_BACKEND_CLANG)
     return __builtin_shufflevector(a, b, Is...);
 #else
+    using T = typename cve_impl::vec_traits<V>::element_type;
     return cve<T, sizeof...(Is)>{ cve_impl::pick<Is, V>(a, b)... };
 #endif
 }
