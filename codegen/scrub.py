@@ -9,7 +9,7 @@ NOISE_DIRECTIVE = re.compile(
 NOISE_LABEL = re.compile(
     r'^(LFB|LFE|LCFI|LECIE|LSCIE|LSFDE|LASFDE|LEFDE|L\$set\$|EH_frame)'
 )
-INLINE_COMMENT = re.compile(r'\s*;.*$')
+INLINE_COMMENT = re.compile(r'\s*(?:##|;).*$')
 
 for line in sys.stdin:
     line = INLINE_COMMENT.sub('', line.rstrip())
