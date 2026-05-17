@@ -11,36 +11,46 @@
 using f4 = cve<float, 4>;
 using i8 = cve<std::int16_t, 8>;
 
-static void test_aligned_load() {
+constexpr bool test_aligned_load() {
     alignas(16) std::array<float, 4> buf = {1, 2, 3, 4};
     f4 v = std::bit_cast<f4>(buf);
-    assert(equiv(v[0], 1.0f) && equiv(v[1], 2.0f) && equiv(v[2], 3.0f) && equiv(v[3], 4.0f));
+    return equiv(v[0], 1.0f) && equiv(v[1], 2.0f)
+        && equiv(v[2], 3.0f) && equiv(v[3], 4.0f);
 }
+static_assert(test_aligned_load());
 
-static void test_aligned_store() {
+constexpr bool test_aligned_store() {
     f4 v = {10, 20, 30, 40};
     auto buf = std::bit_cast<std::array<float, 4>>(v);
-    assert(equiv(buf[0], 10.0f) && equiv(buf[1], 20.0f) && equiv(buf[2], 30.0f) && equiv(buf[3], 40.0f));
+    return equiv(buf[0], 10.0f) && equiv(buf[1], 20.0f)
+        && equiv(buf[2], 30.0f) && equiv(buf[3], 40.0f);
 }
+static_assert(test_aligned_store());
 
-static void test_unaligned_load_element_aligned() {
+constexpr bool test_unaligned_load_element_aligned() {
     alignas(16) std::array<float, 8> buf = {0, 1, 2, 3, 4, 5, 6, 7};
-    std::array<float, 4> sub;
+    std::array<float, 4> sub = {};
     std::ranges::copy(std::span{buf}.subspan(1, 4), sub.begin());
     f4 v = std::bit_cast<f4>(sub);
-    assert(equiv(v[0], 1.0f) && equiv(v[1], 2.0f) && equiv(v[2], 3.0f) && equiv(v[3], 4.0f));
+    return equiv(v[0], 1.0f) && equiv(v[1], 2.0f)
+        && equiv(v[2], 3.0f) && equiv(v[3], 4.0f);
 }
+static_assert(test_unaligned_load_element_aligned());
 
-static void test_unaligned_store_element_aligned() {
+constexpr bool test_unaligned_store_element_aligned() {
     f4 v = {100, 200, 300, 400};
     alignas(16) std::array<float, 8> buf = {};
     auto vbuf = std::bit_cast<std::array<float, 4>>(v);
     std::ranges::copy(vbuf, std::span{buf}.subspan(1).begin());
-    assert(equiv(buf[0], 0.0f));
-    assert(equiv(buf[1], 100.0f) && equiv(buf[2], 200.0f) && equiv(buf[3], 300.0f) && equiv(buf[4], 400.0f));
-    assert(equiv(buf[5], 0.0f));
+    return equiv(buf[0], 0.0f)
+        && equiv(buf[1], 100.0f) && equiv(buf[2], 200.0f)
+        && equiv(buf[3], 300.0f) && equiv(buf[4], 400.0f)
+        && equiv(buf[5], 0.0f);
 }
+static_assert(test_unaligned_store_element_aligned());
 
+// Byte-offset round trips use std::as_bytes/as_writable_bytes, whose
+// reinterpret_cast paths aren't constant-evaluable; keep these runtime.
 static void test_unaligned_load_byte_offset() {
     alignas(16) std::array<std::uint8_t, 64> bytes = {};
     std::array<float, 4> src = {7, 8, 9, 10};
@@ -52,7 +62,8 @@ static void test_unaligned_load_byte_offset() {
                       std::as_writable_bytes(std::span{dst}).begin());
     f4 v = std::bit_cast<f4>(dst);
 
-    assert(equiv(v[0], 7.0f) && equiv(v[1], 8.0f) && equiv(v[2], 9.0f) && equiv(v[3], 10.0f));
+    assert(equiv(v[0], 7.0f) && equiv(v[1], 8.0f)
+        && equiv(v[2], 9.0f) && equiv(v[3], 10.0f));
 }
 
 static void test_unaligned_store_byte_offset() {
@@ -66,7 +77,8 @@ static void test_unaligned_store_byte_offset() {
     std::ranges::copy(std::as_bytes(std::span{bytes}).subspan(3, sizeof dst),
                       std::as_writable_bytes(std::span{dst}).begin());
 
-    assert(equiv(dst[0], -1.0f) && equiv(dst[1], -2.0f) && equiv(dst[2], -3.0f) && equiv(dst[3], -4.0f));
+    assert(equiv(dst[0], -1.0f) && equiv(dst[1], -2.0f)
+        && equiv(dst[2], -3.0f) && equiv(dst[3], -4.0f));
 }
 
 static void test_wider_vec_roundtrip() {
@@ -85,10 +97,6 @@ static void test_wider_vec_roundtrip() {
 }
 
 int main() {
-    test_aligned_load();
-    test_aligned_store();
-    test_unaligned_load_element_aligned();
-    test_unaligned_store_element_aligned();
     test_unaligned_load_byte_offset();
     test_unaligned_store_byte_offset();
     test_wider_vec_roundtrip();

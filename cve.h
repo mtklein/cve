@@ -85,17 +85,18 @@ struct swizzle_proxy {
 #define CVE_VEC_COMMON                                                                 \
     vec() = default;                                                                   \
                                                                                        \
-    constexpr vec(T s) {                                                               \
-        for (std::size_t i = 0; i < N; ++i) v[i] = s;                                  \
-    }                                                                                  \
+    constexpr vec(T s)                                                                 \
+        : vec(s, std::make_index_sequence<N>{}) {}                                     \
+                                                                                       \
+    template <std::size_t... Is>                                                       \
+    constexpr vec(T s, std::index_sequence<Is...>)                                     \
+        : v{ {(static_cast<void>(Is), s)...} } {}                                      \
                                                                                        \
     template <class... Args>                                                           \
         requires (sizeof...(Args) == N) && (N != 1)                                    \
               && ((std::is_convertible_v<Args, T>) && ...)                             \
-    constexpr vec(Args... args) {                                                      \
-        std::size_t j = 0;                                                             \
-        ((v[j++] = static_cast<T>(args)), ...);                                        \
-    }                                                                                  \
+    constexpr vec(Args... args)                                                        \
+        : v{ {static_cast<T>(args)...} } {}                                            \
                                                                                        \
     constexpr T&       operator[](std::size_t i)       { return v[i]; }                \
     constexpr const T& operator[](std::size_t i) const { return v[i]; }
@@ -106,67 +107,61 @@ struct swizzle_proxy {
 // deduction wouldn't consider those conversions on a free template.
 #define CVE_FRIEND_BINOP(OP)                                                           \
     friend constexpr vec operator OP(vec lhs, vec rhs) {                               \
-        vec out;                                                                       \
-        for (std::size_t i = 0; i < N; ++i)                                            \
-            out.v[i] = static_cast<T>(lhs.v[i] OP rhs.v[i]);                           \
-        return out;                                                                    \
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {                    \
+            return vec{ static_cast<T>(lhs.v[Is] OP rhs.v[Is])... };                   \
+        }(std::make_index_sequence<N>{});                                              \
     }                                                                                  \
     friend constexpr vec operator OP(vec lhs, T rhs) {                                 \
-        vec out;                                                                       \
-        for (std::size_t i = 0; i < N; ++i)                                            \
-            out.v[i] = static_cast<T>(lhs.v[i] OP rhs);                                \
-        return out;                                                                    \
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {                    \
+            return vec{ static_cast<T>(lhs.v[Is] OP rhs)... };                         \
+        }(std::make_index_sequence<N>{});                                              \
     }                                                                                  \
     friend constexpr vec operator OP(T lhs, vec rhs) {                                 \
-        vec out;                                                                       \
-        for (std::size_t i = 0; i < N; ++i)                                            \
-            out.v[i] = static_cast<T>(lhs OP rhs.v[i]);                                \
-        return out;                                                                    \
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {                    \
+            return vec{ static_cast<T>(lhs OP rhs.v[Is])... };                         \
+        }(std::make_index_sequence<N>{});                                              \
     }
 
 // TODO: cve_select(mask, a, b) — lane-wise pick from a or b based on
 // mask sign bit. Natural pairing with the comparison ops above.
 #define CVE_FRIEND_CMP(OP)                                                             \
     friend constexpr vec<mask_t<T>, N> operator OP(vec lhs, vec rhs) {                 \
-        vec<mask_t<T>, N> out;                                                         \
-        for (std::size_t i = 0; i < N; ++i)                                            \
-            out.v[i] = (lhs.v[i] OP rhs.v[i]) ? mask_t<T>(-1) : mask_t<T>(0);          \
-        return out;                                                                    \
+        using M = mask_t<T>;                                                           \
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {                    \
+            return vec<M, N>{ ((lhs.v[Is] OP rhs.v[Is]) ? M(-1) : M(0))... };          \
+        }(std::make_index_sequence<N>{});                                              \
     }                                                                                  \
     friend constexpr vec<mask_t<T>, N> operator OP(vec lhs, T rhs) {                   \
-        vec<mask_t<T>, N> out;                                                         \
-        for (std::size_t i = 0; i < N; ++i)                                            \
-            out.v[i] = (lhs.v[i] OP rhs) ? mask_t<T>(-1) : mask_t<T>(0);               \
-        return out;                                                                    \
+        using M = mask_t<T>;                                                           \
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {                    \
+            return vec<M, N>{ ((lhs.v[Is] OP rhs) ? M(-1) : M(0))... };                \
+        }(std::make_index_sequence<N>{});                                              \
     }                                                                                  \
     friend constexpr vec<mask_t<T>, N> operator OP(T lhs, vec rhs) {                   \
-        vec<mask_t<T>, N> out;                                                         \
-        for (std::size_t i = 0; i < N; ++i)                                            \
-            out.v[i] = (lhs OP rhs.v[i]) ? mask_t<T>(-1) : mask_t<T>(0);               \
-        return out;                                                                    \
+        using M = mask_t<T>;                                                           \
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {                    \
+            return vec<M, N>{ ((lhs OP rhs.v[Is]) ? M(-1) : M(0))... };                \
+        }(std::make_index_sequence<N>{});                                              \
     }
 
 #define CVE_FRIEND_BITOP(OP)                                                           \
     friend constexpr vec operator OP(vec lhs, vec rhs)                                 \
         requires std::is_integral_v<T> {                                               \
-        vec out;                                                                       \
-        for (std::size_t i = 0; i < N; ++i)                                            \
-            out.v[i] = static_cast<T>(lhs.v[i] OP rhs.v[i]);                           \
-        return out;                                                                    \
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {                    \
+            return vec{ static_cast<T>(lhs.v[Is] OP rhs.v[Is])... };                   \
+        }(std::make_index_sequence<N>{});                                              \
     }                                                                                  \
     friend constexpr vec operator OP(vec lhs, T rhs)                                   \
         requires std::is_integral_v<T> {                                               \
-        vec out;                                                                       \
-        for (std::size_t i = 0; i < N; ++i)                                            \
-            out.v[i] = static_cast<T>(lhs.v[i] OP rhs);                                \
-        return out;                                                                    \
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {                    \
+            return vec{ static_cast<T>(lhs.v[Is] OP rhs)... };                         \
+        }(std::make_index_sequence<N>{});                                              \
     }                                                                                  \
     friend constexpr vec operator OP(T lhs, vec rhs)                                   \
         requires std::is_integral_v<T> {                                               \
-        vec out;                                                                       \
-        for (std::size_t i = 0; i < N; ++i)                                            \
-            out.v[i] = static_cast<T>(lhs OP rhs.v[i]);                                \
-        return out;                                                                    \
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {                    \
+            return vec{ static_cast<T>(lhs OP rhs.v[Is])... };                         \
+        }(std::make_index_sequence<N>{});                                              \
     }
 
 #define CVE_FRIEND_OPS                                                                 \
@@ -187,18 +182,16 @@ struct swizzle_proxy {
     CVE_FRIEND_BITOP(<<)                                                               \
     CVE_FRIEND_BITOP(>>)                                                               \
     friend constexpr vec operator-(vec u) {                                            \
-        vec out;                                                                       \
-        for (std::size_t i = 0; i < N; ++i)                                            \
-            out.v[i] = static_cast<T>(-u.v[i]);                                        \
-        return out;                                                                    \
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {                    \
+            return vec{ static_cast<T>(-u.v[Is])... };                                 \
+        }(std::make_index_sequence<N>{});                                              \
     }                                                                                  \
     friend constexpr vec operator+(vec u) { return u; }                                \
     friend constexpr vec operator~(vec u)                                              \
         requires std::is_integral_v<T> {                                               \
-        vec out;                                                                       \
-        for (std::size_t i = 0; i < N; ++i)                                            \
-            out.v[i] = static_cast<T>(~u.v[i]);                                        \
-        return out;                                                                    \
+        return [&]<std::size_t... Is>(std::index_sequence<Is...>) {                    \
+            return vec{ static_cast<T>(~u.v[Is])... };                                 \
+        }(std::make_index_sequence<N>{});                                              \
     }                                                                                  \
     friend constexpr vec& operator+=(vec& lhs, vec rhs) { return lhs = lhs + rhs; }    \
     friend constexpr vec& operator-=(vec& lhs, vec rhs) { return lhs = lhs - rhs; }    \
