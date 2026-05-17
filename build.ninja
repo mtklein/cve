@@ -158,6 +158,18 @@ build out/codegen/x86_64h/loop_sum.s: codegen_x86_64h codegen/loop_sum.cc
 build out/codegen/x86_64h/loop_sum.ok: diff out/codegen/x86_64h/loop_sum.s
   golden = codegen/x86_64h/loop_sum.s
 
+build out/codegen/clang/helpers.s: codegen_clang codegen/helpers.cc
+build out/codegen/clang/helpers.ok: diff out/codegen/clang/helpers.s
+  golden = codegen/clang/helpers.s
+
+build out/codegen/gcc/helpers.s: codegen_gcc codegen/helpers.cc
+build out/codegen/gcc/helpers.ok: diff out/codegen/gcc/helpers.s
+  golden = codegen/gcc/helpers.s
+
+build out/codegen/x86_64h/helpers.s: codegen_x86_64h codegen/helpers.cc
+build out/codegen/x86_64h/helpers.ok: diff out/codegen/x86_64h/helpers.s
+  golden = codegen/x86_64h/helpers.s
+
 build README.md: gen_readme readme.py | cve.h codegen/fma.cc codegen/scrub.py $
     tests/test_arith.cc tests/test_swizzle.cc tests/test_loadstore.cc $
     tests/test_types.cc tests/test_shuffle.cc tests/test_util.h
