@@ -4,7 +4,7 @@ clang  = /opt/homebrew/opt/llvm/bin/clang++
 gcc    = /opt/homebrew/bin/g++-15
 ccache = /opt/homebrew/bin/ccache
 
-cxxflags     = -std=c++20 -O1 -g -Iinclude -Werror
+cxxflags     = -std=c++20 -O1 -g -Werror
 clang_warns  = -Weverything $
     -Wno-c++98-compat $
     -Wno-c++98-compat-pedantic $

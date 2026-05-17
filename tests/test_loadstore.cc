@@ -1,4 +1,4 @@
-#include "cve.h"
+#include "../cve.h"
 #include "test_util.h"
 
 #include <algorithm>
