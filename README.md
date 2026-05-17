@@ -13,7 +13,8 @@ f4 fma(f4 a, f4 b, f4 c) {
 ```
 
 Elements: `{int,uint}{8,16,32,64}_t`, `float`, `double`.
-Widths: N = 2, 4, 8, 16. Swizzle accessors on N = 2 and N = 4.
+Widths: N = 2, 3, 4, 8, 16. Named accessors and 1/2/3/4-letter swizzles
+on N = 2, 3, 4.
 
 ## Backends
 
@@ -29,7 +30,8 @@ same test suite.
 ## constexpr
 
 Arithmetic, comparisons, bitwise, shifts, shuffle, convert, and
-`operator[]` are constexpr on all three backends.
+`operator[]` are constexpr on all three backends. The math helpers
+(`cve_abs`, `cve_ceil`, `cve_floor`, `cve_fma`, `cve_max`, `cve_min`, `cve_round`, `cve_sqrt`) are runtime.
 
 Named swizzle accessors (`v.x`, `v.xy`, ...) are not constexpr on the
 wrapper backends: they are empty subobjects at offset 0 via
@@ -53,19 +55,19 @@ Instruction count for `fma(a, b, c) = a*b + c` on AArch64, at `-O0`, `-O1`, and 
 
 | file                | native (clang) | portable (clang) | gcc (vector_size) |
 |---------------------|---------------:|-----------------:|------------------:|
-| `test_arith.cc`     |         142 ms |   207 ms (1.46x) |    232 ms (1.64x) |
-| `test_swizzle.cc`   |         153 ms |   244 ms (1.59x) |    277 ms (1.81x) |
-| `test_loadstore.cc` |         332 ms |   381 ms (1.15x) |    263 ms (0.79x) |
-| `test_types.cc`     |         178 ms |   908 ms (5.09x) |   1236 ms (6.93x) |
+| `test_arith.cc`     |         147 ms |   223 ms (1.52x) |    313 ms (2.13x) |
+| `test_swizzle.cc`   |         150 ms |   273 ms (1.82x) |    418 ms (2.79x) |
+| `test_loadstore.cc` |         326 ms |   387 ms (1.19x) |    315 ms (0.96x) |
+| `test_types.cc`     |         177 ms |  1345 ms (7.58x) |  2024 ms (11.40x) |
 
-`test_types.cc` instantiates 10 element types × 4 widths and evaluates
+`test_types.cc` instantiates 10 element types × 5 widths and evaluates
 all operators through static_assert. At `-O0`, `-O1`, and `-O2`:
 
-| `-O`  | native |       portable |
-|-------|-------:|---------------:|
-| `-O0` | 178 ms | 910 ms (5.11x) |
-| `-O1` | 176 ms | 900 ms (5.10x) |
-| `-O2` | 179 ms | 897 ms (5.00x) |
+| `-O`  | native |        portable |
+|-------|-------:|----------------:|
+| `-O0` | 184 ms | 1361 ms (7.41x) |
+| `-O1` | 186 ms | 1351 ms (7.28x) |
+| `-O2` | 184 ms | 1365 ms (7.43x) |
 
 ## Building
 

@@ -118,6 +118,22 @@ build out/x86_64h/test_loadstore.o: cxx_x86_64h tests/test_loadstore.cc
 build out/x86_64h/test_loadstore:   link_x86_64h out/x86_64h/test_loadstore.o
 build out/x86_64h/test_loadstore.ok: run out/x86_64h/test_loadstore
 
+build out/clang/test_math.o: cxx_clang tests/test_math.cc
+build out/clang/test_math:   link_clang out/clang/test_math.o
+build out/clang/test_math.ok: run out/clang/test_math
+
+build out/gcc/test_math.o: cxx_gcc tests/test_math.cc
+build out/gcc/test_math:   link_gcc out/gcc/test_math.o
+build out/gcc/test_math.ok: run out/gcc/test_math
+
+build out/portable/test_math.o: cxx_portable tests/test_math.cc
+build out/portable/test_math:   link_portable out/portable/test_math.o
+build out/portable/test_math.ok: run out/portable/test_math
+
+build out/x86_64h/test_math.o: cxx_x86_64h tests/test_math.cc
+build out/x86_64h/test_math:   link_x86_64h out/x86_64h/test_math.o
+build out/x86_64h/test_math.ok: run out/x86_64h/test_math
+
 build out/codegen/clang/fma.s: codegen_clang codegen/fma.cc
 build out/codegen/clang/fma.ok: diff out/codegen/clang/fma.s
   golden = codegen/clang/fma.s

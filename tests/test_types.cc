@@ -107,11 +107,13 @@ constexpr bool run_float() {
 
 template <class T>
 constexpr bool run_int_all_n() {
-    return run_int<T, 2>() && run_int<T, 4>() && run_int<T, 8>() && run_int<T, 16>();
+    return run_int<T, 2>() && run_int<T, 3>() && run_int<T, 4>()
+        && run_int<T, 8>() && run_int<T, 16>();
 }
 template <class T>
 constexpr bool run_float_all_n() {
-    return run_float<T, 2>() && run_float<T, 4>() && run_float<T, 8>() && run_float<T, 16>();
+    return run_float<T, 2>() && run_float<T, 3>() && run_float<T, 4>()
+        && run_float<T, 8>() && run_float<T, 16>();
 }
 
 static_assert(run_int_all_n<std::int8_t>());

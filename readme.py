@@ -87,12 +87,18 @@ def cpu_label():
         capture_output=True, text=True, check=True).stdout.strip()
 
 def test_types_matrix():
-    """Read tests/test_types.cc and return (#element types, #widths)."""
+    """Read tests/test_types.cc and return (#element types, sorted widths)."""
     with open("tests/test_types.cc") as f:
         src = f.read()
     types = set(re.findall(r'static_assert\(run_(?:int|float)_all_n<([^>]+)>\(\)', src))
     widths = set(int(m) for m in re.findall(r'run_(?:int|float)<T,\s*(\d+)>', src))
-    return len(types), len(widths)
+    return len(types), sorted(widths)
+
+def math_ops():
+    """Return the sorted list of cve_* runtime math helpers defined in cve.h."""
+    with open("cve.h") as f:
+        src = f.read()
+    return sorted(set(re.findall(r'^\s*V\s+(cve_\w+)\(', src, re.M)))
 
 def table_codegen():
     def at_each_O(cxx, defines):
@@ -147,7 +153,8 @@ f4 fma(f4 a, f4 b, f4 c) {{
 ```
 
 Elements: `{{int,uint}}{{8,16,32,64}}_t`, `float`, `double`.
-Widths: N = 2, 4, 8, 16. Swizzle accessors on N = 2 and N = 4.
+Widths: N = {widths_list}. Named accessors and 1/2/3/4-letter swizzles
+on N = 2, 3, 4.
 
 ## Backends
 
@@ -163,7 +170,8 @@ same test suite.
 ## constexpr
 
 Arithmetic, comparisons, bitwise, shifts, shuffle, convert, and
-`operator[]` are constexpr on all three backends.
+`operator[]` are constexpr on all three backends. The math helpers
+({math_list}) are runtime.
 
 Named swizzle accessors (`v.x`, `v.xy`, ...) are not constexpr on the
 wrapper backends: they are empty subobjects at offset 0 via
@@ -196,7 +204,8 @@ all operators through static_assert. At {codegen_levels}:
 def main():
     if not shutil.which("hyperfine"):
         sys.exit("hyperfine not found in PATH")
-    n_types, n_widths = test_types_matrix()
+    n_types, widths = test_types_matrix()
+    ops = math_ops()
     sys.stdout.write(TEMPLATE.format(
         codegen=table_codegen(),
         compile_per_file=table_compile_per_file(),
@@ -207,7 +216,9 @@ def main():
         runs=HYPERFINE_RUNS,
         cpu=cpu_label(),
         n_types=n_types,
-        n_widths=n_widths,
+        n_widths=len(widths),
+        widths_list=", ".join(str(w) for w in widths),
+        math_list=", ".join(f"`{o}`" for o in ops),
     ))
 
 if __name__ == "__main__":

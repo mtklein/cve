@@ -108,6 +108,31 @@ static void test_swizzle_ints() {
     assert(v[0] == -1 && v[1] == -2 && v[2] == 3 && v[3] == 4);
 }
 
+static void test_vec3() {
+    using f3 = cve<float, 3>;
+    f3 v = {1, 2, 3};
+    assert(equiv(v.x, 1.0f) && equiv(v.y, 2.0f) && equiv(v.z, 3.0f));
+    assert(equiv(v.r, 1.0f) && equiv(v.g, 2.0f) && equiv(v.b, 3.0f));
+
+    f2 a = v.xy;        assert(equiv(a[0], 1.0f) && equiv(a[1], 2.0f));
+    f2 b = v.zx;        assert(equiv(b[0], 3.0f) && equiv(b[1], 1.0f));
+    f3 c = v.zyx;       assert(equiv(c[0], 3.0f) && equiv(c[1], 2.0f) && equiv(c[2], 1.0f));
+    f3 d = v.bgr;       assert(equiv(d[0], 3.0f) && equiv(d[1], 2.0f) && equiv(d[2], 1.0f));
+    f4 e = v.zyxz;      assert(equiv(e[0], 3.0f) && equiv(e[3], 3.0f));
+
+    f3 w = 0.0f;
+    w.zyx = v;
+    assert(equiv(w[0], 3.0f) && equiv(w[1], 2.0f) && equiv(w[2], 1.0f));
+}
+
+static void test_3_letter_on_vec4() {
+    f4 v = {10, 20, 30, 40};
+    using f3 = cve<float, 3>;
+    f3 a = v.xyz;       assert(equiv(a[0], 10.0f) && equiv(a[2], 30.0f));
+    f3 b = v.rgb;       assert(equiv(b[0], 10.0f) && equiv(b[2], 30.0f));
+    f3 c = v.wzy;       assert(equiv(c[0], 40.0f) && equiv(c[2], 20.0f));
+}
+
 int main() {
     test_named_read();
     test_named_write();
@@ -117,5 +142,7 @@ int main() {
     test_swizzle_write_4();
     test_swizzle_in_expression();
     test_swizzle_ints();
+    test_vec3();
+    test_3_letter_on_vec4();
     return 0;
 }
