@@ -33,6 +33,15 @@ rule link_gcc
 rule run
   command = ./$in > $out
 
+rule codegen_clang
+  command = $clang -std=c++20 -O2 -S $in -o - | python3 codegen/scrub.py > $out
+
+rule codegen_gcc
+  command = $gcc -std=c++20 -O2 -S $in -o - | python3 codegen/scrub.py > $out
+
+rule diff
+  command = diff -u $golden $in && touch $out
+
 build out/clang/test_arith.o: cxx_clang tests/test_arith.cc
 build out/clang/test_arith:   link_clang out/clang/test_arith.o
 build out/clang/test_arith.ok: run out/clang/test_arith
@@ -72,3 +81,19 @@ build out/clang/test_loadstore.ok: run out/clang/test_loadstore
 build out/gcc/test_loadstore.o: cxx_gcc tests/test_loadstore.cc
 build out/gcc/test_loadstore:   link_gcc out/gcc/test_loadstore.o
 build out/gcc/test_loadstore.ok: run out/gcc/test_loadstore
+
+build out/codegen/clang/fma.s: codegen_clang codegen/fma.cc
+build out/codegen/clang/fma.ok: diff out/codegen/clang/fma.s
+  golden = codegen/clang/fma.s
+
+build out/codegen/clang/loop_sum.s: codegen_clang codegen/loop_sum.cc
+build out/codegen/clang/loop_sum.ok: diff out/codegen/clang/loop_sum.s
+  golden = codegen/clang/loop_sum.s
+
+build out/codegen/gcc/fma.s: codegen_gcc codegen/fma.cc
+build out/codegen/gcc/fma.ok: diff out/codegen/gcc/fma.s
+  golden = codegen/gcc/fma.s
+
+build out/codegen/gcc/loop_sum.s: codegen_gcc codegen/loop_sum.cc
+build out/codegen/gcc/loop_sum.ok: diff out/codegen/gcc/loop_sum.s
+  golden = codegen/gcc/loop_sum.s
