@@ -24,8 +24,9 @@ on N = 2, 3, 4.
 | vector_size   | `__attribute__((vector_size(N*sizeof(T))))` | gcc           |
 | portable      | `std::array<T, N>`                          | else          |
 
-`-DCVE_FORCE_PORTABLE` overrides the selection. All three pass the
-same test suite.
+N=3 uses `std::array<T, 3>` on gcc since `vector_size` requires
+power-of-2 byte counts. `-DCVE_FORCE_PORTABLE` overrides the selection.
+All three pass the same test suite.
 
 ## constexpr
 
@@ -55,19 +56,19 @@ Instruction count for `fma(a, b, c) = a*b + c` on AArch64, at `-O0`, `-O1`, and 
 
 | file                | native (clang) | portable (clang) | gcc (vector_size) |
 |---------------------|---------------:|-----------------:|------------------:|
-| `test_arith.cc`     |         147 ms |   223 ms (1.52x) |    313 ms (2.13x) |
-| `test_swizzle.cc`   |         150 ms |   273 ms (1.82x) |    418 ms (2.79x) |
-| `test_loadstore.cc` |         326 ms |   387 ms (1.19x) |    315 ms (0.96x) |
-| `test_types.cc`     |         177 ms |  1345 ms (7.58x) |  2024 ms (11.40x) |
+| `test_arith.cc`     |         144 ms |   231 ms (1.61x) |    324 ms (2.25x) |
+| `test_swizzle.cc`   |         155 ms |   282 ms (1.82x) |    423 ms (2.74x) |
+| `test_loadstore.cc` |         338 ms |   388 ms (1.15x) |    322 ms (0.95x) |
+| `test_types.cc`     |         184 ms |  1363 ms (7.39x) |  2011 ms (10.90x) |
 
 `test_types.cc` instantiates 10 element types × 5 widths and evaluates
 all operators through static_assert. At `-O0`, `-O1`, and `-O2`:
 
 | `-O`  | native |        portable |
 |-------|-------:|----------------:|
-| `-O0` | 184 ms | 1361 ms (7.41x) |
-| `-O1` | 186 ms | 1351 ms (7.28x) |
-| `-O2` | 184 ms | 1365 ms (7.43x) |
+| `-O0` | 184 ms | 1370 ms (7.44x) |
+| `-O1` | 182 ms | 1369 ms (7.51x) |
+| `-O2` | 182 ms | 1357 ms (7.46x) |
 
 ## Building
 
