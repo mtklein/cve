@@ -1,11 +1,11 @@
-ninja_required_version = 1.10
+builddir = out
 
 clang  = /opt/homebrew/opt/llvm/bin/clang++
 gcc    = /opt/homebrew/bin/g++-15
 ccache = /opt/homebrew/bin/ccache
 
-cxxflags     = -std=c++20 -O2 -g -Iinclude
-clang_warns  = -Weverything -Werror $
+cxxflags     = -std=c++20 -O1 -g -Iinclude -Werror
+clang_warns  = -Weverything $
     -Wno-c++98-compat $
     -Wno-c++98-compat-pedantic $
     -Wno-pre-c++14-compat $
@@ -14,31 +14,26 @@ clang_warns  = -Weverything -Werror $
     -Wno-pre-c++20-compat-pedantic $
     -Wno-unsafe-buffer-usage $
     -Wno-unsafe-buffer-usage-in-libc-call
-gcc_warns    = -Wall -Wextra -Wpedantic -Werror
+gcc_warns    = -Wall -Wextra -Wpedantic
 
 rule cxx_clang
   command = $ccache $clang $cxxflags $clang_warns $extra -MD -MF $out.d -c $in -o $out
-  description = CXX[clang] $out
   depfile = $out.d
-  deps = gcc
+  deps    = gcc
 
 rule link_clang
-  command = $clang -o $out $in
-  description = LINK[clang] $out
+  command = $clang $in -o $out
 
 rule cxx_gcc
   command = $ccache $gcc $cxxflags $gcc_warns $extra -MD -MF $out.d -c $in -o $out
-  description = CXX[gcc] $out
   depfile = $out.d
-  deps = gcc
+  deps    = gcc
 
 rule link_gcc
-  command = $gcc -o $out $in
-  description = LINK[gcc] $out
+  command = $gcc $in -o $out
 
 rule run
-  command = $in && touch $out
-  description = RUN $in
+  command = ./$in > $out
 
 build out/clang-native/test_arith.o: cxx_clang tests/test_arith.cc
 build out/clang-native/test_arith:   link_clang out/clang-native/test_arith.o
@@ -129,17 +124,3 @@ build out/gcc-portable/test_memcpy.o: cxx_gcc tests/test_memcpy.cc
   extra = -DCVE_FORCE_PORTABLE
 build out/gcc-portable/test_memcpy:   link_gcc out/gcc-portable/test_memcpy.o
 build out/gcc-portable/test_memcpy.ok: run out/gcc-portable/test_memcpy
-
-build all: phony $
-    out/clang-native/test_arith    out/clang-native/test_swizzle    out/clang-native/test_types    out/clang-native/test_shuffle    out/clang-native/test_memcpy $
-    out/gcc-vector/test_arith      out/gcc-vector/test_swizzle      out/gcc-vector/test_types      out/gcc-vector/test_shuffle      out/gcc-vector/test_memcpy $
-    out/clang-portable/test_arith  out/clang-portable/test_swizzle  out/clang-portable/test_types  out/clang-portable/test_shuffle  out/clang-portable/test_memcpy $
-    out/gcc-portable/test_arith    out/gcc-portable/test_swizzle    out/gcc-portable/test_types    out/gcc-portable/test_shuffle    out/gcc-portable/test_memcpy
-
-build test: phony $
-    out/clang-native/test_arith.ok    out/clang-native/test_swizzle.ok    out/clang-native/test_types.ok    out/clang-native/test_shuffle.ok    out/clang-native/test_memcpy.ok $
-    out/gcc-vector/test_arith.ok      out/gcc-vector/test_swizzle.ok      out/gcc-vector/test_types.ok      out/gcc-vector/test_shuffle.ok      out/gcc-vector/test_memcpy.ok $
-    out/clang-portable/test_arith.ok  out/clang-portable/test_swizzle.ok  out/clang-portable/test_types.ok  out/clang-portable/test_shuffle.ok  out/clang-portable/test_memcpy.ok $
-    out/gcc-portable/test_arith.ok    out/gcc-portable/test_swizzle.ok    out/gcc-portable/test_types.ok    out/gcc-portable/test_shuffle.ok    out/gcc-portable/test_memcpy.ok
-
-default test
