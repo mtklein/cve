@@ -164,9 +164,10 @@ on N = 2, 3, 4.
 | vector_size   | `__attribute__((vector_size(N*sizeof(T))))` | gcc           |
 | portable      | `std::array<T, N>`                          | else          |
 
-N=3 uses `std::array<T, 3>` on gcc since `vector_size` requires
-power-of-2 byte counts. `-DCVE_FORCE_PORTABLE` overrides the selection.
-All three pass the same test suite.
+N=3 rounds up to a 4-wide `vector_size` on gcc (the attribute rejects
+non-power-of-2 byte counts) and uses lanes 0..2.
+`-DCVE_FORCE_PORTABLE` overrides the selection. All three pass the
+same test suite.
 
 ## constexpr
 

@@ -2,9 +2,7 @@ __Z3sumPKN8cve_impl3vecIfLm4EEEi:
 	cmp	w1, 0
 	ble	L4
 	movi	v31.4s, 0
-	sub	w1, w1, #1
-	add	x2, x0, 16
-	add	x1, x2, w1, uxtw 4
+	add	x1, x0, w1, uxtw 4
 L3:
 	ldr	q1, [x0], 16
 	fadd	v31.4s, v31.4s, v1.4s
