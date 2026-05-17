@@ -12,11 +12,9 @@ clang_warns  = -Weverything -Werror $
     -Wno-pre-c++17-compat $
     -Wno-pre-c++20-compat $
     -Wno-pre-c++20-compat-pedantic $
-    -Wno-float-equal $
     -Wno-unsafe-buffer-usage $
     -Wno-unsafe-buffer-usage-in-libc-call
-gcc_warns    = -Wall -Wextra -Wpedantic -Werror $
-    -Wno-float-equal
+gcc_warns    = -Wall -Wextra -Wpedantic -Werror
 
 rule cxx_clang
   command = $ccache $clang $cxxflags $clang_warns $extra -MD -MF $out.d -c $in -o $out

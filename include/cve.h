@@ -229,9 +229,11 @@ struct swizzle_proxy {
   #pragma clang diagnostic push
   #pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
   #pragma clang diagnostic ignored "-Wnested-anon-types"
+  #pragma clang diagnostic ignored "-Wfloat-equal"
 #elif defined(__GNUC__)
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wpedantic"
+  #pragma GCC diagnostic ignored "-Wfloat-equal"
 #endif
 
 template <class T, int N>

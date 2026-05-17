@@ -1,7 +1,12 @@
 #include "cve.h"
+#include "test_util.h"
 
 #include <cassert>
 #include <cstdint>
+
+#if defined(__clang__)
+  #pragma clang diagnostic ignored "-Wfloat-equal"
+#endif
 
 template <class T, int N>
 static void test_basic_arith() {
@@ -13,13 +18,13 @@ static void test_basic_arith() {
     V dif = a - b;
     V mul = a * b;
     for (int i = 0; i < N; ++i) {
-        assert(sum[i] == T(5));
-        assert(dif[i] == T(1));
-        assert(mul[i] == T(6));
+        assert(equiv(sum[i], T(5)));
+        assert(equiv(dif[i], T(1)));
+        assert(equiv(mul[i], T(6)));
     }
 
     V s = static_cast<T>(7) + a;
-    for (int i = 0; i < N; ++i) assert(s[i] == T(10));
+    for (int i = 0; i < N; ++i) assert(equiv(s[i], T(10)));
 }
 
 template <class T, int N>
@@ -97,7 +102,7 @@ static void run_float() {
     V a = static_cast<T>(10);
     V b = static_cast<T>(4);
     V q = a / b;
-    for (int i = 0; i < N; ++i) assert(q[i] == T(2.5));
+    for (int i = 0; i < N; ++i) assert(equiv(q[i], T(2.5)));
 }
 
 template <class T>

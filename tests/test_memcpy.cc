@@ -1,4 +1,5 @@
 #include "cve.h"
+#include "test_util.h"
 
 #include <cassert>
 #include <cstdint>
@@ -11,30 +12,30 @@ static void test_aligned_load() {
     alignas(16) float buf[4] = {1, 2, 3, 4};
     f4 v;
     std::memcpy(&v, buf, sizeof v);
-    assert(v[0] == 1 && v[1] == 2 && v[2] == 3 && v[3] == 4);
+    assert(equiv(v[0], 1.0f) && equiv(v[1], 2.0f) && equiv(v[2], 3.0f) && equiv(v[3], 4.0f));
 }
 
 static void test_aligned_store() {
     f4 v = {10, 20, 30, 40};
     alignas(16) float buf[4] = {};
     std::memcpy(buf, &v, sizeof v);
-    assert(buf[0] == 10 && buf[1] == 20 && buf[2] == 30 && buf[3] == 40);
+    assert(equiv(buf[0], 10.0f) && equiv(buf[1], 20.0f) && equiv(buf[2], 30.0f) && equiv(buf[3], 40.0f));
 }
 
 static void test_unaligned_load_element_aligned() {
     alignas(16) float buf[8] = {0, 1, 2, 3, 4, 5, 6, 7};
     f4 v;
     std::memcpy(&v, buf + 1, sizeof v);
-    assert(v[0] == 1 && v[1] == 2 && v[2] == 3 && v[3] == 4);
+    assert(equiv(v[0], 1.0f) && equiv(v[1], 2.0f) && equiv(v[2], 3.0f) && equiv(v[3], 4.0f));
 }
 
 static void test_unaligned_store_element_aligned() {
     f4 v = {100, 200, 300, 400};
     alignas(16) float buf[8] = {};
     std::memcpy(buf + 1, &v, sizeof v);
-    assert(buf[0] == 0);
-    assert(buf[1] == 100 && buf[2] == 200 && buf[3] == 300 && buf[4] == 400);
-    assert(buf[5] == 0);
+    assert(equiv(buf[0], 0.0f));
+    assert(equiv(buf[1], 100.0f) && equiv(buf[2], 200.0f) && equiv(buf[3], 300.0f) && equiv(buf[4], 400.0f));
+    assert(equiv(buf[5], 0.0f));
 }
 
 static void test_unaligned_load_byte_offset() {
@@ -44,7 +45,7 @@ static void test_unaligned_load_byte_offset() {
 
     f4 v;
     std::memcpy(&v, bytes + 5, sizeof v);
-    assert(v[0] == 7 && v[1] == 8 && v[2] == 9 && v[3] == 10);
+    assert(equiv(v[0], 7.0f) && equiv(v[1], 8.0f) && equiv(v[2], 9.0f) && equiv(v[3], 10.0f));
 }
 
 static void test_unaligned_store_byte_offset() {
@@ -54,7 +55,7 @@ static void test_unaligned_store_byte_offset() {
 
     float dst[4];
     std::memcpy(dst, bytes + 3, sizeof dst);
-    assert(dst[0] == -1 && dst[1] == -2 && dst[2] == -3 && dst[3] == -4);
+    assert(equiv(dst[0], -1.0f) && equiv(dst[1], -2.0f) && equiv(dst[2], -3.0f) && equiv(dst[3], -4.0f));
 }
 
 static void test_wider_vec_roundtrip() {
