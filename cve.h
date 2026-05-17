@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <bit>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -34,33 +35,21 @@ struct native { typedef T type __attribute__((ext_vector_type(N))); };
 
 template <class T, std::size_t N> struct vec;
 
-template <class T, std::size_t N>
-struct storage_t {
-#if defined(__GNUC__) && !defined(CVE_FORCE_PORTABLE)
-    typedef T native __attribute__((vector_size(N * sizeof(T))));
-    native e;
-#else
-    alignas(N * sizeof(T)) std::array<T, N> e;
-#endif
-    constexpr T&       operator[](std::size_t i)       { return e[i]; }
-    constexpr const T& operator[](std::size_t i) const { return e[i]; }
-};
-
-// N=3 cannot use the primary template: vector_size requires power-of-2
-// byte counts (rejects 12, 6, 3) and alignas(N*sizeof(T)) requires
-// power-of-2. Back gcc with a 4-wide vector_size and expose only lanes
-// 0..2; the trailing lane matches clang's ext_vector_type(3) layout.
+// W rounds N up to a power of 2 so vector_size and alignas accept it
+// (both require power-of-2 byte counts). Matches clang's
+// ext_vector_type(N) layout, which silently rounds storage the same way.
 #if defined(__clang__)
   #pragma clang diagnostic push
   #pragma clang diagnostic ignored "-Wpadded"
 #endif
-template <class T>
-struct storage_t<T, 3> {
+template <class T, std::size_t N>
+struct storage_t {
+    static constexpr std::size_t W = std::bit_ceil(N);
 #if defined(__GNUC__) && !defined(CVE_FORCE_PORTABLE)
-    typedef T native __attribute__((vector_size(4 * sizeof(T))));
+    typedef T native __attribute__((vector_size(W * sizeof(T))));
     native e;
 #else
-    alignas(4 * sizeof(T)) std::array<T, 3> e;
+    alignas(W * sizeof(T)) std::array<T, N> e;
 #endif
     constexpr T&       operator[](std::size_t i)       { return e[i]; }
     constexpr const T& operator[](std::size_t i) const { return e[i]; }

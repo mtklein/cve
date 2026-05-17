@@ -164,10 +164,10 @@ on N = 2, 3, 4.
 | vector_size   | `__attribute__((vector_size(N*sizeof(T))))` | gcc           |
 | portable      | `std::array<T, N>`                          | else          |
 
-N=3 rounds up to a 4-wide `vector_size` on gcc (the attribute rejects
-non-power-of-2 byte counts) and uses lanes 0..2.
-`-DCVE_FORCE_PORTABLE` overrides the selection. All three pass the
-same test suite.
+Storage byte count rounds up to a power of 2 (`vector_size` and
+`alignas` require it); `cve<float, 3>` is backed by 16 bytes and
+exposes lanes 0..2. `-DCVE_FORCE_PORTABLE` overrides the selection.
+All three pass the same test suite.
 
 ## constexpr
 
