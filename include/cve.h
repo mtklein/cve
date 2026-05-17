@@ -134,6 +134,8 @@ struct swizzle_proxy {
         return r;                                                             \
     }
 
+// TODO: cve_select(mask, a, b) — lane-wise pick from a or b based on
+// mask sign bit. Natural pairing with the comparison ops above.
 #define CVE_FRIEND_CMP(OP)                                                    \
     friend constexpr vec<mask_t<T>, N> operator OP(vec a, vec b) {            \
         vec<mask_t<T>, N> r;                                                  \
@@ -404,6 +406,10 @@ constexpr auto cve_shuffle(V a, V b) {
 #endif
 }
 
+// TODO: math builtins — cve_min, cve_max, cve_abs, cve_sqrt, cve_floor,
+// cve_ceil, cve_round, cve_fma. Clang has __builtin_elementwise_* for these;
+// GCC has nothing analogous, so the wrapper backends would loop with the
+// scalar form from <cmath>.
 template <class To, class V>
 constexpr auto cve_convert(V v) {
     constexpr int N = cve_impl::vec_traits<V>::length;
