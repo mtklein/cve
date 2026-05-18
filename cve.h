@@ -218,16 +218,8 @@ struct swizzle_proxy {
     friend constexpr vec& operator*=(vec& lhs, T   rhs) { return lhs = lhs * rhs; }    \
     friend constexpr vec& operator/=(vec& lhs, T   rhs) { return lhs = lhs / rhs; }
 
-#if defined(__clang__)
-  #pragma clang diagnostic push
-  #pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
-  #pragma clang diagnostic ignored "-Wnested-anon-types"
-  #pragma clang diagnostic ignored "-Wfloat-equal"
-#elif defined(__GNUC__)
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wpedantic"
-  #pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-equal"
 
 template <class T, std::size_t N_>
 struct vec {
@@ -429,11 +421,7 @@ struct vec<T, 4> {
     CVE_FRIEND_OPS
 };
 
-#if defined(__clang__)
-  #pragma clang diagnostic pop
-#elif defined(__GNUC__)
-  #pragma GCC diagnostic pop
-#endif
+#pragma GCC diagnostic pop
 
 #define CVE_PROXY_BINOP(OP)                                                            \
     template <class T,                                                                 \
