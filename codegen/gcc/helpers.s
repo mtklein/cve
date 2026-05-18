@@ -1,20 +1,16 @@
 __Z3minN8cve_impl3vecIfLm8EEES1_:
-	ldp	q31, q30, [x0]
-	ldp	q29, q28, [x1]
-	fcmgt	v27.4s, v28.4s, v30.4s
-	fcmgt	v26.4s, v29.4s, v31.4s
-	bsl	v27.16b, v30.16b, v28.16b
-	bsl	v26.16b, v31.16b, v29.16b
-	stp	q26, q27, [x8]
+	ldp	q29, q30, [x1]
+	ldp	q28, q31, [x0]
+	fminnm	v28.4s, v29.4s, v28.4s
+	fminnm	v30.4s, v30.4s, v31.4s
+	stp	q28, q30, [x8]
 	ret
 __Z3maxN8cve_impl3vecIfLm8EEES1_:
-	ldp	q31, q30, [x0]
-	ldp	q29, q28, [x1]
-	fcmgt	v27.4s, v30.4s, v28.4s
-	fcmgt	v26.4s, v31.4s, v29.4s
-	bsl	v27.16b, v30.16b, v28.16b
-	bsl	v26.16b, v31.16b, v29.16b
-	stp	q26, q27, [x8]
+	ldp	q29, q30, [x1]
+	ldp	q28, q31, [x0]
+	fmaxnm	v28.4s, v29.4s, v28.4s
+	fmaxnm	v30.4s, v30.4s, v31.4s
+	stp	q28, q30, [x8]
 	ret
 __Z3absN8cve_impl3vecIfLm8EEE:
 	ldp	q31, q30, [x0]

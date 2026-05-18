@@ -53,23 +53,23 @@ Instruction count for `fma(a, b, c) = a*b + c` on AArch64, at `-O0`, `-O1`, and 
 
 ## Compile time
 
-`-O1 -Werror`, median of 5 hyperfine runs, Apple M4 Max:
+`-O1 -Werror`, median of 5 hyperfine runs, Apple M4:
 
 | file                | native (clang) | portable (clang) | gcc (vector_size) |
 |---------------------|---------------:|-----------------:|------------------:|
-| `test_arith.cc`     |         140 ms |   224 ms (1.60x) |    313 ms (2.23x) |
-| `test_swizzle.cc`   |         146 ms |   268 ms (1.83x) |    422 ms (2.89x) |
-| `test_loadstore.cc` |         315 ms |   367 ms (1.16x) |    309 ms (0.98x) |
-| `test_types.cc`     |         175 ms |  1329 ms (7.58x) |  1899 ms (10.83x) |
+| `test_arith.cc`     |         147 ms |   231 ms (1.58x) |    321 ms (2.19x) |
+| `test_swizzle.cc`   |         152 ms |   281 ms (1.85x) |    418 ms (2.75x) |
+| `test_loadstore.cc` |         324 ms |   383 ms (1.18x) |    321 ms (0.99x) |
+| `test_types.cc`     |         178 ms |  1353 ms (7.60x) |  1922 ms (10.79x) |
 
 `test_types.cc` instantiates 10 element types × 5 widths and evaluates
 all operators through static_assert. At `-O0`, `-O1`, and `-O2`:
 
 | `-O`  | native |        portable |
 |-------|-------:|----------------:|
-| `-O0` | 179 ms | 1420 ms (7.93x) |
-| `-O1` | 179 ms | 1362 ms (7.59x) |
-| `-O2` | 182 ms | 1429 ms (7.84x) |
+| `-O0` | 177 ms | 1353 ms (7.64x) |
+| `-O1` | 178 ms | 1348 ms (7.56x) |
+| `-O2` | 179 ms | 1347 ms (7.52x) |
 
 ## Building
 

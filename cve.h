@@ -567,14 +567,23 @@ constexpr auto cve_convert(V v) {
 #define CVE_LANEWISE(N, BODY) \
     [&]<std::size_t... Is>(std::index_sequence<Is...>) { return BODY; }(std::make_index_sequence<N>{})
 
+// NaN semantics: matches IEEE-754 minNum/maxNum — if exactly one operand
+// is NaN the non-NaN is returned, else NaN propagates. Lane-wise std::fmin
+// lowers to fminnm on ARM (clang and gcc both) and to the NaN-aware
+// vminps/vcmpunord/vblendvps sequence on x86; clang's elementwise builtin
+// matches those semantics, so the two paths stay consistent.
 template <class V>
 V cve_min(V a, V b) {
 #if defined(__clang__) && !defined(CVE_FORCE_PORTABLE)
     return __builtin_elementwise_min(a, b);
 #else
     using T = typename cve_impl::vec_traits<V>::element_type;
-    return CVE_LANEWISE(cve_impl::vec_traits<V>::length,
-        (V{ static_cast<T>(a[Is] < b[Is] ? a[Is] : b[Is])... }));
+    constexpr std::size_t N = cve_impl::vec_traits<V>::length;
+    if constexpr (std::is_floating_point_v<T>) {
+        return CVE_LANEWISE(N, (V{ std::fmin(a[Is], b[Is])... }));
+    } else {
+        return CVE_LANEWISE(N, (V{ static_cast<T>(a[Is] < b[Is] ? a[Is] : b[Is])... }));
+    }
 #endif
 }
 
@@ -584,8 +593,12 @@ V cve_max(V a, V b) {
     return __builtin_elementwise_max(a, b);
 #else
     using T = typename cve_impl::vec_traits<V>::element_type;
-    return CVE_LANEWISE(cve_impl::vec_traits<V>::length,
-        (V{ static_cast<T>(a[Is] > b[Is] ? a[Is] : b[Is])... }));
+    constexpr std::size_t N = cve_impl::vec_traits<V>::length;
+    if constexpr (std::is_floating_point_v<T>) {
+        return CVE_LANEWISE(N, (V{ std::fmax(a[Is], b[Is])... }));
+    } else {
+        return CVE_LANEWISE(N, (V{ static_cast<T>(a[Is] > b[Is] ? a[Is] : b[Is])... }));
+    }
 #endif
 }
 
