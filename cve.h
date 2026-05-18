@@ -15,11 +15,6 @@ namespace cve_impl {
 template <class To>
 constexpr To implicit_cast(std::type_identity_t<To> x) { return x; }
 
-// Clang's ext_vector_type compare returns the shortest fundamental signed
-// integer of the operand's size — `char` for 1 byte (NOT `signed char`, which
-// is a distinct type), `long` for 8 bytes on LP64 (macOS, Linux) but
-// `long long` on LLP64 (Windows). Using <cstdint> aliases here would mismatch
-// clang's result type and break the clang-native build.
 template <class T>
 using mask_t =
     std::conditional_t<sizeof(T) == 1, char,
@@ -36,9 +31,6 @@ struct native { typedef T type __attribute__((ext_vector_type(N))); };
 
 template <class T, std::size_t N> struct vec;
 
-// W rounds N up to a power of 2 so vector_size and alignas accept it
-// (both require power-of-2 byte counts). Matches clang's
-// ext_vector_type(N) layout, which silently rounds storage the same way.
 #if defined(__clang__)
   #pragma clang diagnostic push
   #pragma clang diagnostic ignored "-Wpadded"
@@ -59,10 +51,8 @@ struct storage_t {
   #pragma clang diagnostic pop
 #endif
 
-// Tag distinguishes xyzw and rgba proxies that index the same elements
-// (e.g. .x and .r). Without it they'd be the same type, and the C++
-// [[no_unique_address]] rule that lets them share offset 0 only applies
-// to subobjects of different types.
+// Distinguish xyzw and rgba proxies that index the same elements;
+// [[no_unique_address]] only works for subobjects of distinct types.
 enum class swizzle_tag : unsigned char { xyzw, rgba };
 
 template <class T, std::size_t N, swizzle_tag Tag, std::size_t... Is>
@@ -115,16 +105,6 @@ struct swizzle_proxy {
     constexpr T&       operator[](std::size_t i)       { return v[i]; }                \
     constexpr const T& operator[](std::size_t i) const { return v[i]; }
 
-// These are friends, not free function templates, so ADL on a vec argument
-// finds them and lets implicit conversions kick in for the other argument.
-// That covers proxy ⊗ vec, vec ⊗ proxy, scalar ⊗ vec, etc. — template arg
-// deduction wouldn't consider those conversions on a free template.
-//
-// GATE controls when the storage-level dispatch (single vector op) is
-// allowed. For ops like +, -, *, & where operating on zero-padded lanes
-// is well-defined, GATE = true. For integer / and % the padding zeros
-// would divide-by-zero, so GATE restricts dispatch to widths where the
-// storage has no padding (sizeof(vec) == sizeof(T) * N).
 #define CVE_FRIEND_BINOP(OP, GATE)                                                     \
     friend constexpr vec operator OP(vec lhs, vec rhs) {                               \
         if constexpr ((GATE) && requires { lhs.v.e OP rhs.v.e; }) {                    \
@@ -455,9 +435,6 @@ struct vec<T, 4> {
   #pragma GCC diagnostic pop
 #endif
 
-// Proxies must be passed by reference: their conversion uses `this` to find
-// the parent vec's storage, so copying to a function arg slot would lose
-// that address.
 #define CVE_PROXY_BINOP(OP)                                                            \
     template <class T,                                                                 \
               std::size_t N1, swizzle_tag T1, std::size_t... Is,                       \
@@ -567,11 +544,6 @@ constexpr auto cve_convert(V v) {
 #define CVE_LANEWISE(N, BODY) \
     [&]<std::size_t... Is>(std::index_sequence<Is...>) { return BODY; }(std::make_index_sequence<N>{})
 
-// NaN semantics: matches IEEE-754 minNum/maxNum — if exactly one operand
-// is NaN the non-NaN is returned, else NaN propagates. Lane-wise std::fmin
-// lowers to fminnm on ARM (clang and gcc both) and to the NaN-aware
-// vminps/vcmpunord/vblendvps sequence on x86; clang's elementwise builtin
-// matches those semantics, so the two paths stay consistent.
 template <class V>
 V cve_min(V a, V b) {
 #if defined(__clang__) && !defined(CVE_FORCE_PORTABLE)
